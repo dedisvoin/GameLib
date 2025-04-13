@@ -8,12 +8,14 @@
 - get_pressed(button: int) -> bool: Проверяет, нажата ли указанная кнопка мыши
 - get_pressed_buttons() -> list[bool]: Возвращает список состояний всех кнопок мыши
 - get_click(button: str) -> bool: Проверяет, была ли нажата указанная кнопка мыши
+- get_double_click(button: str, interval: int) -> bool: Проверяет двойной клик указанной кнопкой мыши
 
 
 Методы Keyboard:
 - get_pressed(key: str) -> bool: Проверяет, нажата ли указанная клавиша
 - get_pressed_keys() -> list[bool]: Возвращает список состояний всех клавиш
 - get_click(key: str) -> bool: Проверяет, была ли нажата указанная клавиша
+- get_key_combination(keys: list[str]) -> bool: Проверяет нажатие комбинации клавиш
 
 
 Методы InputsHandler:
@@ -35,11 +37,13 @@
 >>> mouse_pos = MouseObject.get_position_on_window()  # Получить позицию мыши в окне
 is_left_pressed = MouseObject.get_pressed(CONST_MOUSE_BUTTON_LEFT)  # Проверить нажатие левой кнопки
 is_right_clicked = MouseObject.get_click(CONST_MOUSE_BUTTON_RIGHT)  # Проверить клик правой кнопкой
+is_double_clicked = MouseObject.get_double_click(CONST_MOUSE_BUTTON_LEFT, 500)  # Проверить двойной клик левой кнопкой
 mouse_buttons = MouseObject.get_pressed_buttons()  # Получить состояния всех кнопок
 
 # Работа с клавиатурой
 >>> is_space_pressed = KeyboardObject.get_pressed("space")  # Проверить нажатие пробела
 is_enter_clicked = KeyboardObject.get_click("return")  # Проверить клик клавиши Enter
+is_ctrl_c = KeyboardObject.get_key_combination(["left ctrl", "c"])  # Проверить комбинацию Ctrl+C
 keyboard_keys = KeyboardObject.get_pressed_keys()  # Получить состояния всех клавиш
 
 # Работа с обработчиком событий
@@ -60,17 +64,21 @@ is_shooting = handler.get_event("shoot")  # Проверить событие в
 
 from src.core.settings import (
     CONST_MOUSE_BUTTON_LEFT, CONST_MOUSE_BUTTON_RIGHT, CONST_MOUSE_BUTTON_MIDDLE,
-    CONST_MOUSE_BUTTON_PRESS_EVENT, CONST_MOUSE_BUTTON_CLICK_EVENT, CONST_KEY_CLICK_EVENT, CONST_KEY_PRESS_EVENT
+    CONST_MOUSE_BUTTON_PRESS_EVENT, CONST_MOUSE_BUTTON_CLICK_EVENT, CONST_KEY_CLICK_EVENT, CONST_KEY_PRESS_EVENT,
+    CONST_MOUSE_BUTTON_DOUBLE_CLICK_EVENT, CONST_KEY_DOUBLE_CLICK_EVENT,
+    DOUBLE_CLICK_INTERVAL
 )
 
 import mouse
 import pygame
+import time
 from uuid import uuid4
 
 class Mouse:
     def __init__(self):
         """Инициализация объекта мыши."""
         self.clicked = False
+        self.last_click_time = 0
     
     def get_position_on_screen(self) -> tuple[int, int]:
         """Получить текущую позицию мыши на экране."""
@@ -88,8 +96,8 @@ class Mouse:
         """Проверить, нажата ли кнопка мыши в окне."""
         return pygame.mouse.get_pressed()[{
             CONST_MOUSE_BUTTON_LEFT: 0,
-            CONST_MOUSE_BUTTON_RIGHT: 1,
-            CONST_MOUSE_BUTTON_MIDDLE: 2
+            CONST_MOUSE_BUTTON_RIGHT: 2,
+            CONST_MOUSE_BUTTON_MIDDLE: 1
         }[button]]
 
     def get_pressed_buttons(self) -> list[bool]:
@@ -100,8 +108,8 @@ class Mouse:
         """Проверить, был ли клик кнопкой мыши."""
         button_index = {
             CONST_MOUSE_BUTTON_LEFT: 0,
-            CONST_MOUSE_BUTTON_RIGHT: 1,
-            CONST_MOUSE_BUTTON_MIDDLE: 2
+            CONST_MOUSE_BUTTON_RIGHT: 2,
+            CONST_MOUSE_BUTTON_MIDDLE: 1
         }[button]
         
         is_pressed = pygame.mouse.get_pressed()[button_index]
@@ -114,6 +122,25 @@ class Mouse:
         
         return False
 
+    def get_double_click(self, button: str = CONST_MOUSE_BUTTON_LEFT, interval: int = DOUBLE_CLICK_INTERVAL) -> bool:
+        """
+        Проверить двойной клик кнопкой мыши.
+        
+        Args:
+            button: Кнопка мыши для проверки
+            interval: Интервал между кликами в миллисекундах
+        
+        Returns:
+            bool: True если произошел двойной клик, иначе False
+        """
+        if self.get_click(button):
+            current_time = time.time() * 1000
+            if current_time - self.last_click_time < interval:
+                self.last_click_time = 0
+                return True
+            self.last_click_time = current_time
+        return False
+
 
 # Объект мыши для работы с мышью
 MouseObject = Mouse()
@@ -122,6 +149,7 @@ class Keyboard:
     def __init__(self):
         """Инициализация объекта клавиатуры."""
         self.pressed = False
+        self.last_click_time = 0
 
     def get_pressed(self, key: str) -> bool:
         """Проверить, нажата ли клавиша."""
@@ -143,6 +171,37 @@ class Keyboard:
 
         return False
 
+    def get_key_combination(self, keys: list[str]) -> bool:
+        """
+        Проверить нажатие комбинации клавиш.
+        
+        Args:
+            keys: Список клавиш для проверки
+        
+        Returns:
+            bool: True если все клавиши нажаты, иначе False
+        """
+        return all(self.get_pressed(key) for key in keys)
+
+    def get_double_click(self, key: str, interval: int = DOUBLE_CLICK_INTERVAL) -> bool:
+        """
+        Проверить двойной клик клавишей.
+        
+        Args:
+            key: Клавиша для проверки
+            interval: Интервал между кликами в миллисекундах
+        
+        Returns:
+            bool: True если произошел двойной клик, иначе False
+        """
+        if self.get_click(key):
+            current_time = time.time() * 1000
+            if current_time - self.last_click_time < interval:
+                self.last_click_time = 0
+                return True
+            self.last_click_time = current_time
+        return False
+
 # Объект клавиатуры для работы с клавиатурой
 KeyboardObject = Keyboard()
 
@@ -150,12 +209,16 @@ KeyboardObject = Keyboard()
 class InputsHandler:
     def __init__(self):
         """Инициализация объекта обработчика событий."""
-        self.__events: dict[int | str, tuple[str, str, bool]] = {}
+        self.__events: dict[int | str, tuple[str, str, bool, Mouse | Keyboard]] = {}
     
     def add_event(self, event_type: str = CONST_MOUSE_BUTTON_PRESS_EVENT, id: int | str | None = None, key_or_btn: str = None) -> int | str:
         """Добавить событие для обработки."""
         object_id = id if id else uuid4()
-        self.__events[object_id] = (event_type, key_or_btn, False)
+        if event_type in [CONST_MOUSE_BUTTON_PRESS_EVENT, CONST_MOUSE_BUTTON_CLICK_EVENT, CONST_MOUSE_BUTTON_DOUBLE_CLICK_EVENT]:
+            listen_object = Mouse()
+        elif event_type in [CONST_KEY_PRESS_EVENT, CONST_KEY_CLICK_EVENT, CONST_KEY_DOUBLE_CLICK_EVENT]:
+            listen_object = Keyboard()
+        self.__events[object_id] = (event_type, key_or_btn, False, listen_object)
         return object_id
 
     def remove_event(self, id: int | str):
@@ -165,25 +228,30 @@ class InputsHandler:
 
     def update(self):
         """Обновить состояния событий."""
-        for object_id in list(self.__events.keys()):
-            event_type, key_or_btn, _ = self.__events[object_id]
+        
+        for object_id in self.__events:
+            event_type, key_or_btn, _, obj = self.__events[object_id]
             
-            if event_type in [CONST_MOUSE_BUTTON_PRESS_EVENT, CONST_MOUSE_BUTTON_CLICK_EVENT]:
+            if event_type in [CONST_MOUSE_BUTTON_PRESS_EVENT, CONST_MOUSE_BUTTON_CLICK_EVENT, CONST_MOUSE_BUTTON_DOUBLE_CLICK_EVENT]:
                 if event_type == CONST_MOUSE_BUTTON_PRESS_EVENT:
-                    state = MouseObject.get_pressed(key_or_btn)
-                else:
-                    state = MouseObject.get_click(key_or_btn)
+                    state = obj.get_pressed(key_or_btn)
+                elif event_type == CONST_MOUSE_BUTTON_CLICK_EVENT:
+                    state = obj.get_click(key_or_btn)
+                elif event_type == CONST_MOUSE_BUTTON_DOUBLE_CLICK_EVENT:
+                    state = obj.get_double_click(key_or_btn)
             else:
                 if event_type == CONST_KEY_PRESS_EVENT:
-                    state = KeyboardObject.get_pressed(key_or_btn)
-                else:
-                    state = KeyboardObject.get_click(key_or_btn)
+                    state = obj.get_pressed(key_or_btn)
+                elif event_type == CONST_KEY_CLICK_EVENT:
+                    state = obj.get_click(key_or_btn)
+                elif event_type == CONST_KEY_DOUBLE_CLICK_EVENT:
+                    state = obj.get_double_click(key_or_btn)
                     
-            self.__events[object_id] = (event_type, key_or_btn, state)
+            self.__events[object_id] = (event_type, key_or_btn, state, obj)
     
     def get_event(self, id: int | str) -> bool:
         """Получить состояние события."""
-        return self.__events.get(id, (None, None, False))[2]
+        return self.__events.get(id)[2]
 
     def get_events_list(self) -> list[bool]:
         """Получить список состояний всех событий."""
