@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.star": "csharp",
+        "new": "cpp"
+    }
+}
