@@ -24,6 +24,7 @@ class _WindowHandler:
         self.__window_is_opened = True
         self.__window_is_fullscreen = False # TODO
         self.__window_mouse_whell = 0
+        self.__window_pos = [0, 0]
 
     def _set_quit_key(self, quit_key: str = 'esc') -> None:
         """Установить клавишу для выхода из приложения.
@@ -37,7 +38,6 @@ class _WindowHandler:
         self.__window_is_fullscreen = False
         self.__window_mouse_whell = 0
         self.__window_is_opened = True
-        self.__window_pos = [0, 0]
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -45,7 +45,7 @@ class _WindowHandler:
             elif event.type == pygame.MOUSEWHEEL:
                 self.__window_mouse_whell = event.y
             elif event.type == pygame.WINDOWMOVED:
-                self.__window_pos = event.pos
+                self.__window_pos = [event.x, event.y]
         
         if keyboard.is_pressed(self.__window_quit_key):
             self.__window_is_opened = False

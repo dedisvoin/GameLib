@@ -12,13 +12,32 @@ window.set_view_information_in_title() # Включаем отображение
 
 mouse_object = MouseObject()
 
+
+colors = [
+    COLOR_RED(),
+    COLOR_ORANGE(),
+    COLOR_YELLOW(),
+    COLOR_GREEN(),
+    COLOR_BLUE(),
+    COLOR_PURPLE(),
+    COLOR_PINK(),
+    COLOR_GRAY(),
+    COLOR_BLACK(),
+    COLOR_WHITE(),
+]
+color_index = 0
+
 while window.is_window_opened:
     window.fill_bg()   
-    draw_rect(window.surf, (100, 100), (100, 100), COLOR_ORANGE())
+    draw_rect(window.surf, (100, 100), (100, 100), colors[color_index])
     draw_circle(window.surf, (300, 100), 100, COLOR_RED())
     draw_outline_rect(window.surf, mouse_object.get_position_on_windiw(), (300, 100), COLOR_GOLD(), radius=20)
     
-    print(window.get_window_pos)
+
+    if mouse_object.get_click():
+        color_index += 1
+        if color_index >= len(colors):
+            color_index = 0
 
     window.update()
     

@@ -3,16 +3,10 @@ from src.core.settings import CONST_MOUSE_BUTTON_LEFT, CONST_MOUSE_BUTTON_RIGHT,
 import mouse
 import pygame
 
-class MouseObject:
+class Mouse:
     def __init__(self):
-        ...
-
-    def _get_window_pos(self) -> tuple[int, int]:
-        """Получить текущую позицию окна."""
-        pos_in_screen = self.get_position_on_screen()
-        pos_in_window = self.get_position_on_windiw()
-        speed = self.get_speed()
-        return (pos_in_screen[0] - pos_in_window[0] - speed[0], pos_in_screen[1] - pos_in_window[1] - speed[1])
+        """Инициализация объекта мыши."""
+        self.clicked = False
     
     def get_position_on_screen(self) -> tuple[int, int]:
         """Получить текущую позицию мыши на экране."""
@@ -34,4 +28,28 @@ class MouseObject:
             CONST_MOUSE_BUTTON_MIDDLE: 2
         }[button]]
 
-    
+    def get_pressed_buttons(self) -> list[bool]:
+        """Получить список нажатых кнопок мыши."""
+        return pygame.mouse.get_pressed()
+
+    def get_click(self, button: int = CONST_MOUSE_BUTTON_LEFT) -> bool:
+        """Проверить, был ли совершен клик мышью."""
+        button_index = {
+            CONST_MOUSE_BUTTON_LEFT: 0,
+            CONST_MOUSE_BUTTON_RIGHT: 1,
+            CONST_MOUSE_BUTTON_MIDDLE: 2
+        }[button]
+        
+        is_pressed = pygame.mouse.get_pressed()[button_index]
+        
+        if is_pressed and not self.clicked:
+            self.clicked = True
+            return True
+        elif not is_pressed:
+            self.clicked = False
+        
+        return False
+
+
+# Обьект для работы с мышью
+MouseObject = Mouse()
