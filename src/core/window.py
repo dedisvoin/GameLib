@@ -162,7 +162,7 @@ class _Window:
         self.__window_handler._update_window_state()
     
     @property
-    def is_window_opened(self) -> bool:
+    def is_opened(self) -> bool:
         """Проверка, открыто ли окно pygame.
 
         Returns:
@@ -171,7 +171,7 @@ class _Window:
         return self.__window_handler.window_is_opened
 
     @property
-    def is_window_fullscreen(self) -> bool:
+    def is_fullscreen(self) -> bool:
         """Проверка, находится ли окно в полноэкранном режиме.
         Returns:
             bool: True, если окно в полноэкранном режиме, False в противном случае
@@ -179,7 +179,7 @@ class _Window:
         return self.__window_handler.window_is_fullscreen
 
     @property
-    def get_window_mouse_whell(self) -> int:
+    def get_mouse_whell(self) -> int:
         """Получение значения колеса мыши.
         Returns:
             int: Текущее значение колеса мыши
@@ -187,7 +187,7 @@ class _Window:
         return self.__window_handler.window_mouse_whell
 
     @property
-    def get_window_pos(self) -> Tuple[int, int]:
+    def get_pos(self) -> Tuple[int, int]:
         """Получение позиции окна.
         Returns:
             Tuple[int, int]: Позиция окна в пикселях (x, y)

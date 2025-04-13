@@ -53,3 +53,19 @@ CONST_MOUSE_BUTTON_RIGHT: Final = 'mouse_btn_right'
 CONST_MOUSE_BUTTON_MIDDLE: Final = 'mouse_btn_middle'
 
 # MOUSE SETTINGS ===============================================================
+
+# INPUT EVENT TYPES ============================================================
+
+# 'CONST_NOUSE_BUTTON_CLICK_EVENT' constant for button click event type
+CONST_MOUSE_BUTTON_CLICK_EVENT: Final = 'btn_click_event'
+
+# 'CONST_MOUSE_BUTTON_PRESS_EVENT' constant for button press event type
+CONST_MOUSE_BUTTON_PRESS_EVENT: Final = 'btn_press_event'
+
+# 'CONST_KEY_CLICK_EVENT' constant for mouse click event type
+CONST_KEY_CLICK_EVENT: Final = 'key_click_event'
+
+# 'CONST_KEY_PRESS_EVENT' constant for mouse press event type
+CONST_KEY_PRESS_EVENT: Final = 'key_press_event'
+
+# INPUT EVENT TYPES ============================================================

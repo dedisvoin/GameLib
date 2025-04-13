@@ -110,7 +110,7 @@ class AppWindow(window._Window):
         except ZeroDivisionError:
             return 1
 
-    def fill_bg(self, color: tuple[int, int, int] | None = None) -> None:
+    def fill(self, color: tuple[int, int, int] | None = None) -> None:
         """Заполнить фон окна указанным цветом.
         
         Если цвет не указан, используется текущий цвет фона (__bg_color).

@@ -9,6 +9,6 @@ window = AppWindow(vsync=False).\
 
 window.set_view_information_in_title() # Включаем отображение информации в заголовке окна
 
-while window.is_window_opened:
-    window.fill_bg()
+while window.is_opened:
+    window.fill()
     window.update()
