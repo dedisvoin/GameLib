@@ -31,7 +31,7 @@ while window.is_opened:
     window.fill()   
     draw_rect(window.surf, (100, 100), (100, 100), colors[color_index])
     draw_circle(window.surf, (300, 100), 100, COLOR_RED())
-    draw_outline_rect(window.surf, mouse_object.get_position_on_windiw(), (300, 100), COLOR_GOLD(), radius=20)
+    draw_outline_rect(window.surf, mouse_object.get_position_on_window(), (300, 100), COLOR_GOLD(), radius=20)
     
 
     if mouse_object.get_click():

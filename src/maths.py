@@ -1,4 +1,4 @@
-from math import sqrt, sin, cos, pi, degrees, radians, atan2
+from math import acos, sqrt, sin, cos, pi, degrees, radians, atan2
 from typing import Any
 
 class Vector2D:
@@ -14,6 +14,18 @@ class Vector2D:
         """
         self.x = x
         self.y = y
+
+    @classmethod
+    def between(cls, start: tuple[int, int], end: tuple[int, int]) -> 'Vector2D':
+        """
+        Возвращает вектор между двумя точками.
+        Args:
+            start (tuple[int, int]): Начальная точка.
+            end (tuple[int, int]): Конечная точка.
+        Returns:
+            Vector2D: Вектор между двумя точками.
+        """
+        return cls(end[0] - start[0], end[1] - start[1])
     
     @property
     def xy(self) -> tuple[float, float]:
