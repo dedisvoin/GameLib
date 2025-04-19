@@ -1,4 +1,5 @@
 import pygame
+import math
 from src.render import colors
 
 def draw_rect(surf: pygame.Surface, pos: tuple[int, int], size: tuple[int, int], color: tuple[int, int, int] | colors.Color, 
@@ -84,7 +85,7 @@ def draw_lines(surf: pygame.Surface, points: list[tuple[int, int]], color: tuple
     """
     pygame.draw.lines(surf, color, closed, points, width)
 
-def draw_polygon(surf: pygame.Surface, points: list[tuple[int, int]], color: tuple[int, int, int] | colors.Color, width: int = 1) -> None:
+def draw_polygon(surf: pygame.Surface, points: list[tuple[int, int]], color: tuple[int, int, int] | colors.Color, width: int = 0) -> None:
     """
     Рисует многоугольник на поверхности.
     Args:
@@ -146,48 +147,22 @@ def draw_aalines(surf: pygame.Surface, points: list[tuple[int, int]], color: tup
     """
     pygame.draw.aalines(surf, color, closed, points, blend)
 
-def draw_rect_with_circle(surf: pygame.Surface, rect_pos: tuple[int, int], rect_size: tuple[int, int], 
-                         circle_pos: tuple[int, int], circle_radius: int, color: tuple[int, int, int] | colors.Color) -> None:
+def draw_polygon_circle(surf: pygame.Surface, pos: tuple[int, int], radius: int, color: tuple[int, int, int] | colors.Color, width: int = 0, segments_count: int = 10, rotate: float = 0) -> None:
     """
-    Рисует прямоугольник с кругом на поверхности.
+    Рисует многоугольник на поверхности.
     Args:
-        surf (pygame.Surface): Поверхность для рисования.
-        rect_pos (tuple[int, int]): Позиция прямоугольника.
-        rect_size (tuple[int, int]): Размер прямоугольника.
-        circle_pos (tuple[int, int]): Позиция круга.
-        circle_radius (int): Радиус круга.
-        color (tuple[int, int, int] | colors.Color): Цвет фигур.
+        surf (pygame.Surface): Поверхность, на которой будет нарисован многоугольник.
+        pos (tuple[int, int]): Координаты центра многоугольника.
+        radius (int): Радиус многоугольника.
+        color (tuple[int, int, int] | colors.Color): Цвет многоугольника.
+        width (int): Ширина линии многоугольника.
+        segments_count (int): Количество сегментов многоугольника.
     """
-    draw_rect(surf, rect_pos, rect_size, color)
-    draw_circle(surf, circle_pos, circle_radius, color)
-
-def draw_connected_circles(surf: pygame.Surface, centers: list[tuple[int, int]], radius: int, 
-                         color: tuple[int, int, int] | colors.Color, line_width: int = 1) -> None:
-    """
-    Рисует соединенные линиями круги.
-    Args:
-        surf (pygame.Surface): Поверхность для рисования.
-        centers (list[tuple[int, int]]): Список центров кругов.
-        radius (int): Радиус кругов.
-        color (tuple[int, int, int] | colors.Color): Цвет фигур.
-        line_width (int): Толщина соединительных линий.
-    """
-    for center in centers:
-        draw_circle(surf, center, radius, color)
-    if len(centers) > 1:
-        draw_lines(surf, centers, color, line_width)
-
-def draw_rect_with_triangles(surf: pygame.Surface, rect_pos: tuple[int, int], rect_size: tuple[int, int],
-                           triangle_points: list[list[tuple[int, int]]], color: tuple[int, int, int] | colors.Color) -> None:
-    """
-    Рисует прямоугольник с треугольниками.
-    Args:
-        surf (pygame.Surface): Поверхность для рисования.
-        rect_pos (tuple[int, int]): Позиция прямоугольника.
-        rect_size (tuple[int, int]): Размер прямоугольника.
-        triangle_points (list[list[tuple[int, int]]]): Список точек для каждого треугольника.
-        color (tuple[int, int, int] | colors.Color): Цвет фигур.
-    """
-    draw_rect(surf, rect_pos, rect_size, color)
-    for triangle in triangle_points:
-        draw_polygon(surf, triangle, color)
+    points = []
+    for i in range(segments_count):
+        angle = i * 2 * math.pi / segments_count
+        x = pos[0] + radius * math.cos(angle + rotate)
+        y = pos[1] + radius * math.sin(angle + rotate)
+        points.append((x, y))
+    
+    draw_polygon(surf, points, color, width)

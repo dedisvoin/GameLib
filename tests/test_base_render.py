@@ -5,9 +5,13 @@ from src.render import colors
 import pygame
 
 
-window = AppWindow([1000, 600], "Base Render Tests")
+window = AppWindow([1000, 600], "Base Render Tests", vsync=False)
+window.set_view_information_in_title()
+window.set_waited_fps(120)
+angle = 0
 
 while window.is_opened:
+    angle += 0.01
     window.fill()
 
     base.draw_rect(window.surf, (50, 50), (100, 100), colors.COLOR_RED())
@@ -21,10 +25,9 @@ while window.is_opened:
     
     base.draw_ellipse(window.surf, pygame.Rect(50, 200, 100, 50), colors.COLOR_CYAN())
     base.draw_arc(window.surf, pygame.Rect(200, 200, 100, 100), 0, 3.14, colors.COLOR_MAGENTA())
-    
-    base.draw_connected_circles(window.surf, [(400, 250), (500, 250), (450, 350)], 20, colors.COLOR_GREEN())
-    
-    triangle_points = [[(700, 200), (800, 200), (750, 300)]]
-    base.draw_rect_with_triangles(window.surf, (650, 200), (200, 150), triangle_points, colors.COLOR_PINK())
-    
+
+    base.draw_polygon_circle(window.surf, (500, 200), 100, 'red', 0, 3, angle)
+
+    base.draw_polygon_circle(window.surf, (500, 300), 100, 'green', 10, 5, -angle)
+
     window.update()

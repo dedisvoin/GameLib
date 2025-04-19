@@ -62,6 +62,13 @@ class AppWindow(window._Window):
 
         self.__smoth_deltas = []
 
+    def get_size(self) -> tuple[int, int]:
+        """Получить размер окна в пикселях (ширина, высота).
+        Returns:
+            tuple[int, int]: Размер окна в пикселях (ширина, высота)
+        """
+        return self._size
+
     def close(self):
         """Закрыть окно приложения."""
         pygame.display.quit()

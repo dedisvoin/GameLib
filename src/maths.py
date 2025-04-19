@@ -227,3 +227,89 @@ class Vector2D:
             float: Угол между векторами в градусах.
         """
         return degrees(self.get_angle_between(other))
+
+def point_in_rect(point: tuple[float, float], rect: tuple[float, float, float, float]) -> bool:
+    """
+    Проверяет, находится ли точка внутри прямоугольника.
+    Args:
+        point (tuple[float, float]): Координаты точки.
+        rect (tuple[float, float, float, float]): Координаты прямоугольника (x, y, width, height).
+    Returns:
+        bool: True, если точка внутри прямоугольника, иначе False.
+    """
+    return rect[0] <= point[0] <= rect[0] + rect[2] and rect[1] <= point[1] <= rect[1] + rect[3]
+
+def point_in_circle(point: tuple[float, float], circle: tuple[float, float, float]) -> bool:
+    """
+    Проверяет, находится ли точка внутри окружности.
+    Args:
+        point (tuple[float, float]): Координаты точки.
+        circle (tuple[float, float, float]): Координаты окружности (x, y, radius).
+    Returns:
+        bool: True, если точка внутри окружности, иначе False.
+    """
+    return (point[0] - circle[0]) ** 2 + (point[1] - circle[1]) ** 2 <= circle[2] ** 2
+
+def point_in_polygon(point: tuple[float, float], polygon: list[tuple[float, float]]) -> bool:
+    """
+    Проверяет, находится ли точка внутри многоугольника.
+    Args:
+        point (tuple[float, float]): Координаты точки.
+        polygon (list[tuple[float, float]]): Список координат вершин многоугольника.
+    Returns:
+        bool: True, если точка внутри многоугольника, иначе False.
+    """
+    n = len(polygon)
+    inside = False
+    p1x, p1y = polygon[0]
+    for i in range(n + 1):
+        p2x, p2y = polygon[i % n]
+        if point[1] > min(p1y, p2y):
+            if point[1] <= max(p1y, p2y):
+                if point[0] <= max(p1x, p2x):
+                    if p1y != p2y:
+                        xinters = (point[1] - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                        if p1x == p2x or point[0] <= xinters:
+                            inside = not inside
+        p1x, p1y = p2x, p2y
+    return inside
+
+def collision_rect_rect(rect1: tuple[float, float, float, float], rect2: tuple[float, float, float, float]) -> bool:
+    """
+    Проверяет, есть ли пересечение между двумя прямоугольниками.
+    Args:
+        rect1 (tuple[float, float, float, float]): Координаты первого прямоугольника (x, y, width, height).
+        rect2 (tuple[float, float, float, float]): Координаты второго прямоугольника (x, y, width, height).
+    Returns:
+        bool: True, если прямоугольники пересекаются, иначе False.
+    """
+    return (
+        rect1[0] < rect2[0] + rect2[2] and
+        rect1[0] + rect1[2] > rect2[0] and
+        rect1[1] < rect2[1] + rect2[3] and
+        rect1[1] + rect1[3] > rect2[1]
+    )
+
+def collision_rect_circle(rect: tuple[float, float, float, float], circle: tuple[float, float, float]) -> bool:
+    """
+    Проверяет, есть ли пересечение между прямоугольником и окружностью.
+    Args:
+        rect (tuple[float, float, float, float]): Координаты прямоугольника (x, y, width, height).
+        circle (tuple[float, float, float]): Координаты окружности (x, y, radius).
+    Returns:
+        bool: True, если прямоугольник и окружность пересекаются, иначе False.
+    """
+    closest_x = max(rect[0], min(circle[0], rect[0] + rect[2]))
+    closest_y = max(rect[1], min(circle[1], rect[1] + rect[3]))
+    return (circle[0] - closest_x) ** 2 + (circle[1] - closest_y) ** 2 <= circle[2] ** 2
+
+def collision_circle_circle(circle1: tuple[float, float, float], circle2: tuple[float, float, float]) -> bool:
+    """
+    Проверяет, есть ли пересечение между двумя окружностями.
+    Args:
+        circle1 (tuple[float, float, float]): Координаты первой окружности (x, y, radius).
+        circle2 (tuple[float, float, float]): Координаты второй окружности (x, y, radius).
+    Returns:
+        bool: True, если окружности пересекаются, иначе False.
+    """
+    return (circle1[0] - circle2[0]) ** 2 + (circle1[1] - circle2[1]) ** 2 <= (circle1[2] + circle2[2]) ** 2

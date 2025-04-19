@@ -105,6 +105,15 @@ class _Window:
         self._construct_window(self.__size, self.__flags, vsync, self.__title)
 
     @property
+    def _size(self) -> Tuple[int, int]:
+        """Получить размер окна.
+
+        Returns:
+            Tuple[int, int]: Размер окна в пикселях (ширина, высота)
+        """
+        return self.__size
+
+    @property
     def _surf(self) -> pygame.Surface:
         """Получить поверхность окна.
         Returns:
