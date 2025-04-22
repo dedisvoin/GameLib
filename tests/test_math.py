@@ -7,11 +7,11 @@ from src.maths import *
 from src.render.base import draw_polygon, draw_circle, draw_rect
 from src.inputs import MouseObject
 
-window = AppWindow(vsync=False).\
+window = AppWindow(vsync=True).\
          set_waited_fps(CONST_WINDOW_MAX_FPS)   # Устанавливаем желаемую частоту кадров и выключаем вертикальную синхронизацию
 
 window.set_view_information_in_title() # Включаем отображение информации в заголовке окна
-
+window.set_view_information_in_window()
 
 
 points = [

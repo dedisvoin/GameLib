@@ -102,7 +102,16 @@ class _Window:
         self.__surf: pygame.Surface = None
         self.__flags = self._generate_flags(flags)
         self.__window_handler = _WindowHandler()
+        self.__vsync = vsync
         self._construct_window(self.__size, self.__flags, vsync, self.__title)
+
+    @property
+    def _vsync(self) -> bool:
+        """Получить состояние вертикальной синхронизации.
+        Returns:
+            bool: Вертикальная синхронизация включена
+        """
+        return self.__vsync
 
     @property
     def _size(self) -> Tuple[int, int]:
@@ -159,7 +168,7 @@ class _Window:
             vsync (bool): Включена вертикальная синхронизация
             title (str): Заголовок окна
         """
-        self.__surf = pygame.display.set_mode(size, flags, vsync=vsync)
+        self.__surf = pygame.display.set_mode(size, flags | pygame.SRCALPHA, depth=0, vsync=vsync)
         pygame.display.set_caption(title)
 
     def _update(self) -> None:

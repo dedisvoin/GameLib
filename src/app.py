@@ -20,6 +20,8 @@ Dependencies:
 from src.core.settings import WINDOW_SIZE, WINDOW_TITLE, WINDOW_VSYNC, WINDOW_WAITED_FPS, WINDOW_BG_COLOR, WINDOW_DELTA_MATCH_FPS
 from src.core import window
 
+from src.render.text import TextField
+
 from typing import Tuple, Callable, Any
 import pygame
 
@@ -59,8 +61,14 @@ class AppWindow(window._Window):
         self.__bg_color = (255, 255, 255)
 
         self.__view_information_in_title = False
+        self.__view_information_in_window = False
 
         self.__smoth_deltas = []
+
+        self.__text_field_fps = TextField("arial", 20, "black", True)
+        self.__text_field_delta = TextField("arial", 16, "black", False)
+        self.__text_field_render_timer = TextField("arial", 16, "black", False)
+        self.__text_field_vsync = TextField("arial", 16, "black", False)
 
     def get_size(self) -> tuple[int, int]:
         """Получить размер окна в пикселях (ширина, высота).
@@ -68,6 +76,13 @@ class AppWindow(window._Window):
             tuple[int, int]: Размер окна в пикселях (ширина, высота)
         """
         return self._size
+    
+    def get_at_size(self) -> tuple[int, int]:
+        """Получить размер окна в пикселях (ширина, высота).
+        Returns:
+            tuple[int, int]: Размер окна в пикселях (ширина, высота)
+        """
+        return self._surf.get_size()
 
     def close(self):
         """Закрыть окно приложения."""
@@ -80,6 +95,14 @@ class AppWindow(window._Window):
             view_information_in_title: Отображение информации о частоте кадров в заголовке окна. По умолчанию True.
         """
         self.__view_information_in_title = view_information_in_title
+
+    def set_view_information_in_window(self, view_information_in_window: bool = True):
+        """Установить отображение информации о частоте кадров в окне.
+
+        Args:
+            view_information_in_window: Отображение информации о частоте кадров в окне. По умолчанию True.
+        """
+        self.__view_information_in_window = view_information_in_window
 
     def set_quit_key(self, quit_key: str = 'esc'):
         """Установить клавишу для выхода из приложения.
@@ -150,6 +173,23 @@ class AppWindow(window._Window):
             color = self.__bg_color
         self._surf.fill(color)
 
+        if self.__view_information_in_window:
+            
+            self.__text_field_fps.set_text(f"FPS: {int(self.get_fps())} / {self.__waited_fps}")
+            self.__text_field_fps.render(self.surf, (5, 0))
+            self.__text_field_render_timer.set_text(f"render time: {self.get_render_time()} ms")
+            self.__text_field_render_timer.render(self.surf, (5, 20))
+            self.__text_field_delta.set_text(f"delta: {self.get_delta(smooth=True):.2f}")
+            self.__text_field_delta.render(self.surf, (5, 35))
+            if self._vsync:
+                self.__text_field_vsync.set_color('green')
+                self.__text_field_vsync.set_text(f"vsync: on")
+            else:
+                self.__text_field_vsync.set_color('black')
+                self.__text_field_vsync.set_text(f"vsync: off")
+            self.__text_field_vsync.render(self.surf, (5, 50))
+
+
     def update(self) -> None:
         """Обновление состояния приложения.
         
@@ -173,6 +213,8 @@ class AppWindow(window._Window):
 
         if self.__view_information_in_title:
             pygame.display.set_caption(f"{self._title} | FPS: {int(self.get_fps())}/{self.__waited_fps} | RENDER TIME: {self.get_render_time()}ms | DELTA: {self.get_delta(True):.2f}")
+
+        
 
         self.__clock.tick(self.__waited_fps)
 

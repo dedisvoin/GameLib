@@ -1,35 +1,52 @@
 import importer
 
-from src.app import AppWindow, AppProcessesPool, AppSubProcess
-from src.render import batching, base
+from src.app import AppWindow, AppSubProcess
 
 from src.maths import Vector2D
-from random import uniform
 
-WINDOW_SIZE = (1000, 1000)
+from src.render import base, colors
+from random import randint, uniform
+import pygame
 
-window = AppWindow(size=WINDOW_SIZE, title="Test Batching", vsync=False)
-window.set_waited_fps(500)
-window.set_view_information_in_title()
+sprite_group = pygame.sprite.Group()
 
 class Ball:
     def __init__(self):
-        self.__radius = 20
-        self.__position = Vector2D(500, 500)
-        self.__speed = Vector2D(uniform(-1, 1)*10, uniform(-1, 1)*10)
+        self.pos = Vector2D(300, 300)
+        self.speed = Vector2D(uniform(-10, 10), uniform(-10, 10))
+        self.surf = pygame.Surface((20, 20))
+        self.surf.set_colorkey((0, 0, 0))
+        self.sprite = pygame.sprite.Sprite()
+        self.sprite.image = self.surf
+        
+        
+        base.draw_circle(self.surf, (10, 10), 10, colors.Color.Random().rgb)    
+
+    def render(self):
+        self.sprite.rect = self.surf.get_rect(center=self.pos.xy)
+        sprite_group.add(self.sprite)
 
     def update(self):
-        self.__position += self.__speed
-        if self.__position.x < self.__radius or self.__position.x > WINDOW_SIZE[0] - self.__radius:
-            self.__speed.x *= -1
-        if self.__position.y < self.__radius or self.__position.y > WINDOW_SIZE[1] - self.__radius:
-            self.__speed.y *= -1
+        self.pos += self.speed
+        if self.pos.x > 600:
+            self.speed.x = -self.speed.x
+        if self.pos.x < 0:
+            self.speed.x = -self.speed.x
+        if self.pos.y > 600:
+            self.speed.y = -self.speed.y
+        if self.pos.y < 0:
+            self.speed.y = -self.speed.y
 
-    def render(self, surf):
-        base.draw_circle(surf, self.__position.xy, self.__radius, "red")
+
+window = AppWindow([600, 600], "Test", vsync=False)
+window.set_waited_fps(10000)
+window.set_view_information_in_title()
 
 
-balls = [Ball() for _ in range(5000)]
+
+
+balls = [Ball() for _ in range(10000)]
+
 
 
 def update():
@@ -37,18 +54,11 @@ def update():
         ball.update()
 
 
-update_process = AppSubProcess(update, 1 / 60, 'update').start()
-
-batching_system = batching.Batch(window, batch_size=1000)
+AppSubProcess(update, 1/60).start()
 
 while window.is_opened:
     window.fill()
-    batching_system.update()
     for ball in balls:
-        
-        ball.render(batching_system.surf)
-    batching_system.render()
-
+        ball.render()
+    sprite_group.draw(window.surf)
     window.update()
-
-    

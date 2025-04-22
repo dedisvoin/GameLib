@@ -2,6 +2,8 @@
 Модуль colors.py содержит класс Color для работы с цветами и предопределенные константы цветов.
 """
 
+from random import randint
+
 class Color:
     """
     Класс для представления цвета в формате RGBA.
@@ -26,6 +28,16 @@ class Color:
         self.g = g
         self.b = b
         self.a = a
+
+    @classmethod
+    def Random(self):
+        """
+        Возвращает случайный цвет.
+
+        Возвращает:
+            Color: Случайный цвет
+        """
+        return Color(randint(0, 255), randint(0, 255), randint(0, 255))
     
     @property
     def rgb(self):
