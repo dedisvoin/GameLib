@@ -1,5 +1,6 @@
 from math import acos, sqrt, sin, cos, pi, degrees, radians, atan2
 from typing import Any
+from random import uniform, randint
 
 class Vector2D:
     """
@@ -26,6 +27,42 @@ class Vector2D:
             Vector2D: Вектор между двумя точками.
         """
         return cls(end[0] - start[0], end[1] - start[1])
+    
+    @classmethod
+    def random(cls, min_value: int = 0, max_value: int = 100) -> 'Vector2D':
+        """
+        Возвращает случайный вектор с координатами в заданном диапазоне.
+        Args:
+            min_value (int): Минимальное значение координаты.
+            max_value (int): Максимальное значение координаты.
+        returns:
+            Vector2D: Случайный вектор.
+        """
+        return cls(randint(min_value, max_value), randint(min_value, max_value))
+    
+    @classmethod
+    def random_angle(cls, min_angle: float = 0, max_angle: float = 360) -> 'Vector2D':
+        """
+        Возвращает случайный вектор с углом в заданном диапазоне.
+        Args:
+            min_angle (float): Минимальный угол в градусах.
+            max_angle (float): Максимальный угол в градусах.
+        Returns:
+            Vector2D: Случайный вектор с углом.
+        """
+        angle = uniform(min_angle, max_angle)
+        return cls(cos(radians(angle)), sin(radians(angle)))
+    
+    @classmethod
+    def from_angle(cls, lenght: float) -> 'Vector2D':
+        """
+        Возвращает вектор с заданной длиной и углом 0 градусов.
+        Args:
+            lenght (float): Длина вектора.
+        Returns:
+            Vector2D: Вектор с заданной длиной и углом 0 градусов.
+        """
+        return cls.random_angle(0, 360) * lenght
     
     @property
     def xy(self) -> tuple[float, float]:
@@ -192,6 +229,28 @@ class Vector2D:
         """
         return self.x * other.x + self.y * other.y
     
+    def set_angle(self, angle: float) -> None:
+        """
+        Устанавливает угол вектора в градусах.
+        Args:
+            angle (float): Угол в градусах.
+        """
+        length = self.lenght()
+        angle = radians(angle)
+        self.x = cos(angle) * length
+        self.y = sin(angle) * length
+
+    def rotate(self, angle: float) -> 'Vector2D':
+        """
+        Поворачивает вектор на заданный угол в градусах.
+        Args:
+            angle (float): Угол поворота в градусах.
+        Returns:
+            Vector2D: Повернутый вектор.
+        """
+        before_angle = self.get_angle_degrees()
+        self.set_angle(before_angle + angle)
+        
     def get_angle(self) -> float:
         """
         Возвращает угол вектора в радианах.
