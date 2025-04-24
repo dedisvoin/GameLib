@@ -1,290 +1,172 @@
-"""
-GPU модуль для выполнения вычислений на графическом процессоре с использованием OpenCL.
-
-Этот модуль предоставляет класс GPUKernel для удобной работы с OpenCL.
-Он позволяет компилировать и выполнять OpenCL ядра на GPU или других OpenCL-совместимых устройствах.
-
-Примеры использования:
-    # Простое сложение массивов
-    gpu = GPUKernel()
-    
-    kernel_code = '''
-    __kernel void add_arrays(
-        __global const float* a,
-        __global const float* b,
-        __global float* result
-    ) {
-        int idx = get_global_id(0);
-        result[idx] = a[idx] + b[idx];
-    }
-    '''
-    
-    gpu.compile_kernel(kernel_code, "add_arrays")
-    a = np.array([1, 2, 3], dtype=np.float32)
-    b = np.array([4, 5, 6], dtype=np.float32)
-    result = np.empty_like(a)
-    result = gpu.run_kernel("add_arrays", (3,), None, a, b, result=result)
-    
-    # Матричное умножение
-    kernel_code = '''
-    __kernel void matrix_multiply(
-        __global const float* A,
-        __global const float* B,
-        __global float* C,
-        const int N
-    ) {
-        int row = get_global_id(0);
-        int col = get_global_id(1);
-        
-        float sum = 0.0f;
-        for (int k = 0; k < N; k++) {
-            sum += A[row * N + k] * B[k * N + col];
-        }
-        C[row * N + col] = sum;
-    }
-    '''
-    
-    gpu.compile_kernel(kernel_code, "matrix_multiply")
-    N = 3
-    A = np.random.rand(N, N).astype(np.float32)
-    B = np.random.rand(N, N).astype(np.float32)
-    C = np.empty((N, N), dtype=np.float32)
-    result = gpu.run_kernel("matrix_multiply", (N, N), None, A, B, C=C, N=np.int32(N))
-"""
-
 import pyopencl as cl
 import numpy as np
-from typing import Optional, Union, List
 
-class GPUKernel:
+class GPU:
     """
-    Класс для работы с OpenCL ядрами на GPU.
-    
-    Этот класс предоставляет удобный интерфейс для:
-    - Инициализации OpenCL контекста
-    - Компиляции OpenCL программ
-    - Выполнения ядер на GPU
-    - Управления памятью и буферами
-    
-    Аргументы:
-        platform_idx (int): Индекс OpenCL платформы (по умолчанию 0)
-        device_idx (int): Индекс устройства на выбранной платформе (по умолчанию 0)
-    
-    Примеры:
-        >>> # Создание экземпляра для работы с первым доступным GPU
-        gpu = GPUKernel()
-        
-        >>> # Использование конкретной платформы и устройства
-        gpu = GPUKernel(platform_idx=1, device_idx=2)
+    Упрощенная обертка PyOpenCL для быстрой работы и быстрого получения результатов.
+    Фокусируется на минимальном оверхеде и удобстве использования.
     """
 
-    def __init__(self, platform_idx: int = 0, device_idx: int = 0):
+    def __init__(self, platform_idx=0, device_idx=0, use_async=False):
         """
-        Инициализация контекста и очереди команд для выбранного устройства.
-        
-        Аргументы:
-            platform_idx (int): Индекс OpenCL платформы
-            device_idx (int): Индекс устройства
-        
-        Исключения:
-            RuntimeError: Если не найдены OpenCL платформы или устройства
-        """
-        platforms = cl.get_platforms()
-        if not platforms:
-            raise RuntimeError("Не найдены OpenCL-платформы!")
-        
-        self.platform = platforms[platform_idx]
-        devices = self.platform.get_devices()
-        if not devices:
-            raise RuntimeError("Не найдены устройства!")
-        
-        self.device = devices[device_idx]
-        self.ctx = cl.Context([self.device])
-        self.queue = cl.CommandQueue(self.ctx)
-        self.programs = {}  # Кэш скомпилированных программ
+        Инициализирует контекст OpenCL, очередь команд и выбирает устройство.
 
-    def compile_kernel(self, kernel_code: str, kernel_name: str) -> None:
+        Args:
+            platform_idx (int): Индекс OpenCL платформы для использования.
+            device_idx (int): Индекс устройства на платформе для использования.
+            use_async (bool): Использовать асинхронную передачу данных для повышения производительности.
         """
-        Компилирует и кэширует OpenCL-ядро.
-        
-        Эта функция компилирует OpenCL код и сохраняет скомпилированную программу
-        в кэше для последующего использования.
-        
-        Аргументы:
-            kernel_code (str): Исходный код OpenCL ядра
-            kernel_name (str): Имя функции ядра
-        
-        Исключения:
-            RuntimeError: При ошибке компиляции ядра
-        
-        Примеры:
-            >>> # Компиляция простого ядра
-            kernel_code = '''
-            __kernel void square(
-                __global const float* input,
-                __global float* output
-            ) {
-                int idx = get_global_id(0);
-                output[idx] = input[idx] * input[idx];
-            }
-            '''
-            gpu.compile_kernel(kernel_code, "square")
-        """
-        if kernel_name in self.programs:
-            return
-        
         try:
-            program = cl.Program(self.ctx, kernel_code).build()
-            self.programs[kernel_name] = program
+            platforms = cl.get_platforms()
+            self.platform = platforms[platform_idx]
+            devices = self.platform.get_devices()
+            self.device = devices[device_idx]
+            self.ctx = cl.Context([self.device])
+            # Асинхронная очередь или синхронная
+            properties = cl.command_queue_properties.OUT_OF_ORDER_EXEC_MODE_ENABLE if use_async else 0
+            self.queue = cl.CommandQueue(self.ctx, properties=properties)
+            self.programs = {}
+            self.use_async = use_async  # Флаг для управления асинхронностью
+
+            print(f"OpenCL инициализирован на {self.device.name}")
+
+        except Exception as e:
+            print(f"Ошибка инициализации OpenCL: {e}")
+            self.ctx = None  # Индикатор ошибки инициализации
+            self.queue = None
+            self.platform = None
+            self.device = None
+
+    def compile(self, kernel_source, program_name):
+        """
+        Компилирует программу OpenCL из исходного кода.
+
+        Args:
+            kernel_source (str): Исходный код OpenCL ядра.
+            program_name (str): Имя для ассоциации с программой.
+
+        Raises:
+            cl.RuntimeError: Если компиляция ядра не удалась.
+        """
+        if not self.ctx:
+            raise RuntimeError("Контекст OpenCL не инициализирован.")
+
+        try:
+            self.programs[program_name] = cl.Program(self.ctx, kernel_source).build()
         except cl.RuntimeError as e:
-            raise RuntimeError(f"Ошибка компиляции ядра {kernel_name}:\n{e}")
+            print(f"Ошибка компиляции OpenCL программы '{program_name}': {e}")
+            raise
 
-    def run_kernel(
-        self,
-        kernel_name: str,
-        global_size: tuple,
-        local_size: Optional[tuple],
-        *args,
-        **kwargs
-    ) -> Union[np.ndarray, List[np.ndarray]]:
+    def buffer(self, data, flags=cl.mem_flags.READ_WRITE | cl.mem_flags.COPY_HOST_PTR):
         """
-        Запускает ядро и возвращает результат.
-        
-        Эта функция выполняет скомпилированное ядро на GPU, передавая ему
-        указанные аргументы и возвращая результаты вычислений.
-        
-        Аргументы:
-            kernel_name (str): Имя ядра для выполнения
-            global_size (tuple): Глобальный размер работы (количество потоков)
-            local_size (Optional[tuple]): Локальный размер работы (размер рабочей группы)
-            *args: Позиционные аргументы для ядра (входные массивы или скаляры)
-            **kwargs: Именованные аргументы для ядра (выходные массивы)
-        
-        Возвращает:
-            Union[np.ndarray, List[np.ndarray]]: Результат выполнения ядра
-        
-        Исключения:
-            ValueError: Если ядро не было скомпилировано
-        
-        Примеры:
-            >>> # Возведение в квадрат элементов массива
-            input_data = np.array([1, 2, 3, 4], dtype=np.float32)
-            output_data = np.empty_like(input_data)
-            result = gpu.run_kernel(
-                "square",
-                global_size=(4,),
-                local_size=None,
-                input_data,
-                output=output_data
-            )
-            
-            >>> # Матричное умножение
-            A = np.random.rand(100, 100).astype(np.float32)
-            B = np.random.rand(100, 100).astype(np.float32)
-            C = np.empty((100, 100), dtype=np.float32)
-            result = gpu.run_kernel(
-                "matrix_multiply",
-                global_size=(100, 100),
-                local_size=(10, 10),
-                A, B,
-                C=C,
-                N=np.int32(100)
-            )
-        """
-        if kernel_name not in self.programs:
-            raise ValueError(f"Ядро '{kernel_name}' не скомпилировано!")
-        
-        kernel = getattr(self.programs[kernel_name], kernel_name)
-        
-        # Преобразуем аргументы в буферы, если это необходимо
-        cl_args = []
-        output_buffers = []
-        output_arrays = []
-        
-        for arg in args:
-            if isinstance(arg, np.ndarray):
-                # Входные данные (READ_ONLY)
-                buf = cl.Buffer(
-                    self.ctx,
-                    cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
-                    hostbuf=arg
-                )
-                cl_args.append(buf)
-            else:
-                cl_args.append(arg)
-        
-        # Выходные буферы (WRITE_ONLY)
-        for name, value in kwargs.items():
-            if isinstance(value, np.ndarray):
-                buf = cl.Buffer(
-                    self.ctx,
-                    cl.mem_flags.WRITE_ONLY,
-                    value.nbytes
-                )
-                cl_args.append(buf)
-                output_buffers.append(buf)
-                output_arrays.append(value)
-        
-        # Запуск ядра
-        kernel.set_args(*cl_args)
-        cl.enqueue_nd_range_kernel(
-            self.queue,
-            kernel,
-            global_size,
-            local_size
-        )
-        
-        # Копирование результатов
-        for i, buf in enumerate(output_buffers):
-            cl.enqueue_copy(self.queue, output_arrays[i], buf)
-        
-        self.queue.finish()  # Ожидаем завершения
-        
-        return output_arrays[0] if len(output_arrays) == 1 else output_arrays
+        Создает буфер OpenCL из массива NumPy.
 
-    def __del__(self):
+        Args:
+            data (numpy.ndarray): Массив NumPy для создания буфера.
+            flags (int): Флаги памяти OpenCL (например, READ_ONLY, COPY_HOST_PTR).
+
+        Returns:
+            pyopencl.Buffer: Созданный буфер OpenCL.
         """
-        Очистка ресурсов.
-        
-        Этот метод вызывается при удалении объекта и обеспечивает корректное
-        освобождение ресурсов OpenCL.
+        if not self.ctx:
+            raise RuntimeError("Контекст OpenCL не инициализирован.")
+
+        return cl.Buffer(self.ctx, flags, hostbuf=data)
+
+    def run(self, program_name, kernel_name, global_size, *args):
         """
-        if hasattr(self, 'queue'):
+        Запускает ядро OpenCL.  Автоматически ожидает завершения, если не в async режиме.
+
+        Args:
+            program_name (str): Имя загруженной программы, содержащей ядро.
+            kernel_name (str): Имя функции ядра для запуска.
+            global_size (tuple): Размер глобального рабочего пространства (количество work items).
+            *args: Аргументы для передачи в функцию ядра (буферы OpenCL, скаляры).
+
+        Returns:
+            None: Если self.use_async == True
+            numpy.ndarray: Результат после копирования из буфера если self.use_async == False
+        """
+        if not self.ctx:
+            raise RuntimeError("Контекст OpenCL не инициализирован.")
+
+        if program_name not in self.programs:
+            raise ValueError(f"Программа '{program_name}' не загружена.")
+
+        kernel = getattr(self.programs[program_name], kernel_name)
+        kernel(self.queue, global_size, None, *args) # Запускаем ядро
+
+        if not self.use_async:
+            # Если не асинхронный режим, дожидаемся завершения и сразу копируем результат.
+            self.queue.finish()  # Дожидаемся завершения всех операций в очереди
+
+    def result(self, buffer):
+        """
+        Быстро копирует данные из буфера OpenCL в массив NumPy и возвращает его.
+        Ожидает завершения всех операций в очереди перед копированием.
+
+        Args:
+            buffer (pyopencl.Buffer): Буфер OpenCL, из которого нужно получить данные.
+
+        Returns:
+            numpy.ndarray: Копия данных из буфера OpenCL в массиве NumPy.
+        """
+
+        dest = np.empty(buffer.size // np.dtype(np.float32).itemsize, dtype=np.float32) #Создаем подходящий по размеру массив
+
+        if self.use_async: #Если нужно, дожидаемся всех операций
+            self.queue.finish() #Если не закончили еще, то ждем
+
+        cl.enqueue_copy(self.queue, dest, buffer).wait() #Копируем данные. await() важно чтобы дождаться
+
+        return dest #Возвращаем
+
+    def finish(self):
+        """
+        Ожидает завершения всех поставленных в очередь команд OpenCL.
+        """
+        if self.queue:
             self.queue.finish()
+        else:
+            print("Очередь не инициализирована")
 
-if __name__ == "__main__":
-    # Пример использования класса GPUKernel
+# Пример использования:
+if __name__ == '__main__':
+    try:
+        # 1. Инициализация с асинхронной передачей данных
+        cl_helper = GPU(use_async=False) #True лучше для производительности, но нужно вручную дожидаться finish
 
-    # Инициализация
-    gpu = GPUKernel()
+        # 2. Исходный код ядра (теперь пишем прямо здесь)
+        kernel_source = """
+        __kernel void square(__global float *in, __global float *out) {
+            int gid = get_global_id(0);
+            out[gid] = in[gid] * in[gid];
+        }
+        """
 
-    # Код ядра для сложения массивов
-    add_kernel = """
-    __kernel void add_arrays(
-        __global const int* a,
-        __global const int* b,
-        __global int* result
-    ) {
-        int idx = get_global_id(0);
-        result[idx] = a[idx] + b[idx];
-    }
-    """
+        # 3. Компиляция ядра
+        cl_helper.compile(kernel_source, "my_program")
 
-    # Компиляция ядра
-    gpu.compile_kernel(add_kernel, "add_arrays")
+        # 4. Создание входных данных
+        n = 10
+        input_data = np.arange(n, dtype=np.float32)
 
-    # Подготовка входных данных
-    a = np.array([1, 2, 3], dtype=np.int16)
-    b = np.array([4, 5, 6], dtype=np.int16)
-    result = np.empty_like(a)
+        # 5. Создание буферов OpenCL
+        input_buffer = cl_helper.buffer(input_data, flags=cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR)
 
-    # Запуск ядра и получение результата
-    result = gpu.run_kernel(
-        "add_arrays",
-        (3,), 
-        None,
-        a, b, 
-        result=result,
-    )
+        output_data = np.zeros_like(input_data)  # Allocate memory for the output
+        output_buffer = cl_helper.buffer(output_data) #Let opencl allocate memory itself
 
-    print(result)  # [5, 7, 9]
+        # 6. Запуск ядра OpenCL
+        cl_helper.run("my_program", "square", (n,), input_buffer, output_buffer) #Асинхронный запуск
+
+        # 7. Получение результата.
+        result = cl_helper.result(output_buffer)
+
+        # 8. Вывод
+        print("Вход:", input_data)
+        print("Выход:", result)
+        print(f"Устройство: {cl_helper.device.name}")
+
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
