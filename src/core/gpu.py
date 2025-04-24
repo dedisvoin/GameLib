@@ -1,3 +1,121 @@
+"""
+Документация модуля GPU
+======================
+
+Этот модуль предоставляет упрощенную обертку для PyOpenCL для облегчения быстрых вычислений на GPU
+с минимальными накладными расходами и удобными шаблонами использования.
+
+Классы
+-------
+GPU
+    Класс-обертка для PyOpenCL, который упрощает инициализацию устройства, компиляцию ядер
+    и операции передачи данных.
+
+Зависимости
+-----------
+- pyopencl: Для операций OpenCL
+- numpy: Для операций с массивами и структур данных
+
+Класс: GPU
+----------
+Методы:
+    __init__(platform_idx=0, device_idx=0, use_async=False)
+        Инициализирует контекст OpenCL, очередь команд и выбирает устройство.
+        
+        Аргументы:
+            platform_idx (int): Индекс платформы OpenCL для использования
+            device_idx (int): Индекс устройства на платформе для использования
+            use_async (bool): Использовать ли асинхронную передачу данных для лучшей производительности
+        
+    compile(kernel_source, program_name)
+        Компилирует программу OpenCL из исходного кода.
+        
+        Аргументы:
+            kernel_source (str): Исходный код ядра OpenCL
+            program_name (str): Имя для ассоциации с программой
+        
+        Исключения:
+            cl.RuntimeError: Если компиляция ядра не удалась
+            RuntimeError: Если контекст OpenCL не инициализирован
+    
+    buffer(data, flags=cl.mem_flags.READ_WRITE | cl.mem_flags.COPY_HOST_PTR)
+        Создает буфер OpenCL из массива NumPy.
+        
+        Аргументы:
+            data (numpy.ndarray): Массив NumPy для создания буфера
+            flags (int): Флаги памяти OpenCL (например, READ_ONLY, COPY_HOST_PTR)
+        
+        Возвращает:
+            pyopencl.Buffer: Созданный буфер OpenCL
+        
+        Исключения:
+            RuntimeError: Если контекст OpenCL не инициализирован
+    
+    run(program_name, kernel_name, global_size, *args)
+        Выполняет ядро OpenCL. Автоматически ждет завершения, если не в асинхронном режиме.
+        
+        Аргументы:
+            program_name (str): Имя загруженной программы, содержащей ядро
+            kernel_name (str): Имя функции ядра для выполнения
+            global_size (tuple): Размер глобального рабочего пространства (количество рабочих элементов)
+            *args: Аргументы для передачи функции ядра (буферы OpenCL, скаляры)
+        
+        Возвращает:
+            None: Если self.use_async == True
+            numpy.ndarray: Результат после копирования из буфера если self.use_async == False
+        
+        Исключения:
+            RuntimeError: Если контекст OpenCL не инициализирован
+            ValueError: Если program_name не загружена
+    
+    result(buffer)
+        Быстро копирует данные из буфера OpenCL в массив NumPy.
+        Ждет завершения всех операций в очереди перед копированием.
+        
+        Аргументы:
+            buffer (pyopencl.Buffer): Буфер OpenCL для получения данных
+        
+        Возвращает:
+            numpy.ndarray: Копия данных из буфера OpenCL в массиве NumPy
+    
+    finish()
+        Ожидает завершения всех поставленных в очередь команд OpenCL.
+
+Пример использования
+------------
+
+# Инициализация помощника GPU с асинхронной передачей данных
+>>> gpu = GPU(use_async=True)
+
+# Компиляция ядра
+>>> kernel_source = '''
+__kernel void square(__global float *in, __global float *out) {
+    int gid = get_global_id(0);
+    out[gid] = in[gid] * in[gid];
+}
+'''
+>>> gpu.compile(kernel_source, "square_program")
+
+# Подготовка данных
+>>> data = np.array([1, 2, 3, 4], dtype=np.float32)
+>>> input_buf = gpu.buffer(data)
+>>> output_buf = gpu.buffer(np.zeros_like(data))
+
+# Запуск ядра
+>>> gpu.run("square_program", "square", (len(data),), input_buf, output_buf)
+
+# Получение результатов
+>>> result = gpu.result(output_buf)
+
+
+Примечания
+-----
+- Класс разработан для простоты и удобства использования, а не для максимальной гибкости
+- Асинхронный режим может обеспечить лучшую производительность, но требует ручной синхронизации
+- Реализована обработка ошибок для большинства распространенных операций OpenCL
+- Класс автоматически управляет жизненным циклом контекста OpenCL и очереди команд
+"""
+
 import pyopencl as cl
 import numpy as np
 

@@ -173,6 +173,29 @@ class AppWindow(window._Window):
             color = self.__bg_color
         self._surf.fill(color)
 
+
+    def update(self) -> None:
+        """Обновление состояния приложения.
+        
+        Вызывает внутренние методы для обновления состояния окна и обработки событий.
+        Обновляет информацию в заголовке окна, если включено отображение.
+        Контролирует частоту кадров.
+        """
+        
+        
+
+        try:
+            delta = WINDOW_DELTA_MATCH_FPS / self.get_fps()
+        except ZeroDivisionError:
+            delta = 1
+        self.__smoth_deltas.append(delta)
+
+        if len(self.__smoth_deltas) > 50:
+            self.__smoth_deltas.pop(0)
+        
+
+        if self.__view_information_in_title:
+            pygame.display.set_caption(f"{self._title} | FPS: {int(self.get_fps())}/{self.__waited_fps} | RENDER TIME: {self.get_render_time()}ms | DELTA: {self.get_delta(True):.2f}")
         if self.__view_information_in_window:
             
             self.__text_field_fps.set_text(f"FPS: {int(self.get_fps())} / {self.__waited_fps}")
@@ -189,31 +212,8 @@ class AppWindow(window._Window):
                 self.__text_field_vsync.set_text(f"vsync: off")
             self.__text_field_vsync.render(self.surf, (5, 50))
 
-
-    def update(self) -> None:
-        """Обновление состояния приложения.
-        
-        Вызывает внутренние методы для обновления состояния окна и обработки событий.
-        Обновляет информацию в заголовке окна, если включено отображение.
-        Контролирует частоту кадров.
-        """
-        
         self._update()
         self._update_state()
-
-        try:
-            delta = WINDOW_DELTA_MATCH_FPS / self.get_fps()
-        except ZeroDivisionError:
-            delta = 1
-        self.__smoth_deltas.append(delta)
-
-        if len(self.__smoth_deltas) > 50:
-            self.__smoth_deltas.pop(0)
-        
-
-        if self.__view_information_in_title:
-            pygame.display.set_caption(f"{self._title} | FPS: {int(self.get_fps())}/{self.__waited_fps} | RENDER TIME: {self.get_render_time()}ms | DELTA: {self.get_delta(True):.2f}")
-
         
 
         self.__clock.tick(self.__waited_fps)

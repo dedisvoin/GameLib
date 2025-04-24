@@ -41,6 +41,8 @@ CONST_WINDOW_CONSOLE_FPS: Final = 30
 
 # WINDOW SETTINGS ==============================================================================
 
+
+
 # MOUSE SETTINGS ===============================================================================
 
 # 'CONST_MOUSE_BUTTON_LEFT' constant for mouse button left
@@ -53,6 +55,8 @@ CONST_MOUSE_BUTTON_RIGHT: Final = 'mouse_btn_right'
 CONST_MOUSE_BUTTON_MIDDLE: Final = 'mouse_btn_middle'
 
 # MOUSE SETTINGS ===============================================================================
+
+
 
 # INPUT EVENT TYPES ============================================================================
 
@@ -77,3 +81,65 @@ CONST_KEY_DOUBLE_CLICK_EVENT: Final = 'key_double_click_event'
 DOUBLE_CLICK_INTERVAL = 500                                          # ( double click interval )
  
 # INPUT EVENT TYPES ============================================================================
+
+
+
+# GPU SETTINGS =================================================================================
+
+# 'CONST_GPU_KERNEL_SQUARE_SOURCE' constant for gpu kernel square source
+CONST_GPU_KERNEL_SQUARE_SOURCE = """
+__kernel void square(__global float *in, __global float *out) {
+    int gid = get_global_id(0);
+    out[gid] = in[gid] * in[gid];
+}
+"""
+
+# 'CONST_GPU_KERNEL_SQRT_SOURCE' constant for gpu kernel sqrt source
+CONST_GPU_KERNEL_SQRT_SOURCE = """
+__kernel void sqrt(__global float *in, __global float *out) {
+    int gid = get_global_id(0);
+    out[gid] = sqrt(in[gid]);
+}
+"""
+
+# 'CONST_GPU_KERNEL_SUM_SOURCE' constant for gpu kernel sum source
+CONST_GPU_KERNEL_SUM_SOURCE = """
+__kernel void sum(__global float *in_1, __global float *in_2, __global float *out) {
+    int gid = get_global_id(0);
+    out[gid] = in_1[gid] + in_2[gid];
+}
+"""
+
+# 'CONST_GPU_KERNEL_SUB_SOURCE' constant for gpu kernel sub source
+CONST_GPU_KERNEL_SUB_SOURCE = """
+__kernel void sub(__global float *in_1, __global float *in_2, __global float *out) {
+    int gid = get_global_id(0);
+    out[gid] = in_1[gid] - in_2[gid];
+}
+"""
+
+# 'CONST_GPU_KERNEL_MUL_SOURCE' constant for gpu kernel mul source
+CONST_GPU_KERNEL_MUL_SOURCE = """
+__kernel void mul(__global float *in_1, __global float *in_2, __global float *out) {
+    int gid = get_global_id(0);
+    out[gid] = in_1[gid] * in_2[gid];
+}
+"""
+
+# 'CONST_GPU_KERNEL_DIV_SOURCE' constant for gpu kernel div source
+CONST_GPU_KERNEL_DIV_SOURCE = """
+__kernel void div(__global float *in_1, __global float *in_2, __global float *out) {
+    int gid = get_global_id(0);
+    out[gid] = in_1[gid] / in_2[gid];
+}
+"""
+
+# 'CONST_GPU_KERNEL_POW_SOURCE' constant for gpu kernel pow source
+CONST_GPU_KERNEL_POW_SOURCE = """
+__kernel void pow(__global float *in_1, __global float *in_2, __global float *out) {
+    int gid = get_global_id(0);
+    out[gid] = pow(in_1[gid], in_2[gid]);
+}
+"""
+
+# GPU SETTINGS =================================================================================

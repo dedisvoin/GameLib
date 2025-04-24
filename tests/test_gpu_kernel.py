@@ -86,7 +86,7 @@ class ParticleApp:
             self.gpu.run(
                 "particle_program", "update_particles", (self.num_particles,),
                 self.pos_x_buf, self.pos_y_buf, self.vel_x_buf, self.vel_y_buf, self.colors_buf,
-                np.float32(0.01), np.float32(center_x), np.float32(center_y), np.float32(gravity),
+                np.float32(0.08), np.float32(center_x), np.float32(center_y), np.float32(gravity),
                 np.float32(self.width), np.float32(self.height)
             )
 

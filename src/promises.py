@@ -261,9 +261,10 @@ if __name__ == "__main__":
 
     elif test_type == 1:
             # Создаем большой массив данных для обработки
-            data = [i for i in range(1, 1000001)]
+            data = [i for i in range(1, 10000001)]
 
             def complex_calculation(promise: BasePromise, numbers: list[int]) -> dict:
+                print(f"Запущен промис: {promise.get_id()} {promise.get_index()}")
                 """Выполняет сложные вычисления над массивом чисел."""
                 results = {
                     'sum_squares': 0,
@@ -305,11 +306,11 @@ if __name__ == "__main__":
                     # Проверка на отмену
                     if promise.is_cancelled():
                         raise CancelledError("Calculation was cancelled")
-                    
+                print(f"[ + ] Завершен промис: {promise.get_id()} {promise.get_index()}")
                 return results
 
-            # Создаем пул с 4 промисами и таймаутом 30 секунд
-            pool = PromisePool(max_promises=10, timeout=60.0)
+            # Создаем пул с 4 промисами и таймаутом 200 секунд
+            pool = PromisePool(max_promises=20, timeout=200.0)
         
             # Разбиваем данные на части и добавляем в пул
             pool.add_promises(complex_calculation, data)

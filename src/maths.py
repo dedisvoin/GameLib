@@ -2,6 +2,9 @@ from math import acos, sqrt, sin, cos, pi, degrees, radians, atan2
 from typing import Any
 from random import uniform, randint
 
+import perlin_noise
+from noise import pnoise2
+
 class Vector2D:
     """
     Класс для представления двумерного вектора.
@@ -372,3 +375,17 @@ def collision_circle_circle(circle1: tuple[float, float, float], circle2: tuple[
         bool: True, если окружности пересекаются, иначе False.
     """
     return (circle1[0] - circle2[0]) ** 2 + (circle1[1] - circle2[1]) ** 2 <= (circle1[2] + circle2[2]) ** 2
+
+def get_perlin_noise(nx: int, ny: int, octaves: int, persistence: float = 1, scale: float = 1) -> list[list[float]]:
+    """
+    Генерирует шум Перлина для заданных параметров.
+    Args:
+        nx (int): Размерность шума по оси x.
+        ny (int): Размерность шума по оси y.
+        octaves (float): Количество октав.
+        persistence (float): Значение persistence.
+        scale (float): Масштаб шума.
+    Returns:
+        list[list[float]]: Массив шума Перлина.
+    """
+    return pnoise2(nx * scale, ny * scale, octaves, persistence, scale)

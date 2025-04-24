@@ -1,7 +1,6 @@
 import pygame
 from src.render.colors import Color
 
-
 class TextField:
     """Класс для создания текстового поля."""
 
