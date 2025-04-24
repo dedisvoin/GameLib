@@ -88,4 +88,3 @@ class BasePromise:
             raise self.__error
         return self.__result
 
-
