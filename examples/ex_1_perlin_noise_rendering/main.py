@@ -13,7 +13,7 @@ window.set_view_information_in_window()
 
 
 
-tile_size = 5
+tile_size = 2
 array = []
 for i in range(window.get_size()[0] // tile_size):
     arr = []

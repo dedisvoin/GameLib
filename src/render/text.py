@@ -11,7 +11,7 @@ class TextField:
         self.__bold = bold
         self.__italic = italic
         self.__font_object = pygame.font.SysFont(self.__font, self.__font_size, self.__bold, self.__italic)
-        self.__text: str
+        self.__text: str = ''
 
     def render(self, surf: pygame.Surface, pos: tuple[int, int] = (0, 0), antialias: bool = True,
                left_or_right: bool = True, up_or_down: bool = True):

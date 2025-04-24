@@ -69,6 +69,9 @@ class AppWindow(window._Window):
         self.__text_field_delta = TextField("arial", 16, "black", False)
         self.__text_field_render_timer = TextField("arial", 16, "black", False)
         self.__text_field_vsync = TextField("arial", 16, "black", False)
+        self.__text_field_frame_grafic_fps = TextField("arial", 12, "black", True)
+
+        self.__frame_time_array = []
 
     def get_size(self) -> tuple[int, int]:
         """Получить размер окна в пикселях (ширина, высота).
@@ -212,12 +215,48 @@ class AppWindow(window._Window):
                 self.__text_field_vsync.set_text(f"vsync: off")
             self.__text_field_vsync.render(self.surf, (5, 50))
 
+            # График frametime
+            
+            self.__frame_time_array.append(self.get_render_time())
+            if len(self.__frame_time_array) > 100:
+                self.__frame_time_array.pop(0)
+            
+            # Отрисовка графика
+            graph_height = 90
+            graph_width = 200
+            graph_x = 5
+            graph_y = 70
+            
+            # Фон графика
+            pygame.draw.rect(self.surf, (1, 1, 1), (graph_x, graph_y, graph_width, graph_height), 1)
+            
+            # Отрисовка линий графика
+            if len(self.__frame_time_array) > 1:
+                max_time = max(self.__frame_time_array)
+                for i in range(len(self.__frame_time_array)-1):
+                    x1 = graph_x + (i * graph_width / 100)
+                    x2 = graph_x + ((i+1) * graph_width / 100)
+                    y1 = graph_y + graph_height - (self.__frame_time_array[i] * graph_height / max_time)
+                    y2 = graph_y + graph_height - (self.__frame_time_array[i+1] * graph_height / max_time)
+                    pygame.draw.line(self.surf, (0,0,0), (x1,y1), (x2,y2), 1)
+
+                # Отрисовка отметок FPS
+                fps_marks = [30, 60, 120]  # Отметки FPS для отображения
+                for fps in fps_marks:
+                    ms_per_frame = 1000 / fps  # Преобразование FPS в миллисекунды
+                    if ms_per_frame < max_time:
+                        y = graph_y + graph_height - (ms_per_frame * graph_height / max_time)
+                        pygame.draw.line(self.surf, (200,0,0), (graph_x, y+3), (graph_x + graph_width, y + 3), 1)
+                        self.__text_field_frame_grafic_fps.set_text(f"FPS: {fps}")
+                        self.__text_field_frame_grafic_fps.set_color('red')
+                        self.__text_field_frame_grafic_fps.render(self.surf, (graph_x + graph_width + 5, y - 8))
+
         self._update()
         self._update_state()
         
 
-        self.__clock.tick(self.__waited_fps)
-
+        self.__clock.tick(self.__waited_fps)    
+        
     @property
     def surf(self) -> pygame.Surface:
         """Получить поверхность окна.

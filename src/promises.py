@@ -109,6 +109,11 @@ class PromisePool:
         self.__max_promises = max_promises
         self.__timeout = timeout
 
+    def clean_promises(self) -> None:
+        """Очищает список промисов."""
+        self.__promises.clear()
+        self.__promises_args.clear()
+
     def add_promise(self, callable: Callable, id: Optional[int | str], *args, **kvargs) -> BasePromise:
         """Добавляет новый промис в пул.
 
@@ -166,7 +171,6 @@ class PromisePool:
             daemon: Флаг, указывающий запускать ли промисы как демоны
         """
         for promise in self.__promises:
-            
             promise(True, *self.__promises_args.pop(0))
 
     def await_all(self, timeout: Optional[float] = None) -> list[Any]:
@@ -181,6 +185,8 @@ class PromisePool:
         results = []
         for promise in self.__promises:
             results.append(promise.await_result(timeout))
+            #self.__promises.remove(promise)
+            
         return results
 
 test_type = 1
