@@ -30,6 +30,17 @@ class Vector2D:
             Vector2D: Вектор между двумя точками.
         """
         return cls(end[0] - start[0], end[1] - start[1])
+
+    @classmethod
+    def from_tuple(cls, tuple: tuple[int, int]) -> 'Vector2D':
+        """
+        Возвращает вектор из кортежа с координатами.
+        Args:
+            tuple (tuple[int, int]): Кортеж с координатами.
+        Returns:
+            Vector2D: Вектор из кортежа с координатами.
+        """
+        return cls(tuple[0], tuple[1])
     
     @classmethod
     def random(cls, min_value: int = 0, max_value: int = 100) -> 'Vector2D':

@@ -129,6 +129,10 @@ class ViewportRenderer:
                 self.__rotated_surface = pygame.transform.rotate(self.__scaled_surface, current_angle)
                 self.__last_angle = current_angle
 
+    def clear(self, color: tuple[int, int, int, int] = (0, 0, 0, 0)) -> None:
+        self.__viewport_color = color
+        self.__base_surface.fill(color)
+
     def render(self) -> None:
         self.__update_surfaces()
         

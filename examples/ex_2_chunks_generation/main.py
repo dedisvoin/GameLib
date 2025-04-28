@@ -14,8 +14,8 @@ window.set_view_information_in_window(True)
 window.set_waited_fps(120)
 
 CHUNK_SIZE = 32
-TILE_SIZE = 10
-VIEW_DISTANCE = 10
+TILE_SIZE = 5
+VIEW_DISTANCE = 15
 
 chunk_width = CHUNK_SIZE * TILE_SIZE
 
@@ -47,7 +47,7 @@ def generate_chunk(promise: BasePromise, chunk_pos: tuple[int, int]) -> pygame.S
             
             pygame.draw.rect(chunk_surface, colors[tile_type], 
                            (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-    sleep(4)
+    sleep(1)
     return chunk_surface
 
 class WorldGenerator:
@@ -97,8 +97,10 @@ class WorldGenerator:
             promise = BasePromise(generate_chunk, timeout=5.0, id=chunk_key)
             promise(True, chunk_pos)
 
+
             with self.lock:
                 self.pending_chunks[chunk_key] = promise
+            
 
     def check_pending_chunks(self):
         completed_chunks = []

@@ -85,7 +85,7 @@ class AppWindow(window._Window):
         Returns:
             tuple[int, int]: Размер окна в пикселях (ширина, высота)
         """
-        return self._surf.get_size()
+        return pygame.display.get_window_size()
 
     def close(self):
         """Закрыть окно приложения."""
@@ -176,29 +176,11 @@ class AppWindow(window._Window):
             color = self.__bg_color
         self._surf.fill(color)
 
-
-    def update(self) -> None:
-        """Обновление состояния приложения.
-        
-        Вызывает внутренние методы для обновления состояния окна и обработки событий.
-        Обновляет информацию в заголовке окна, если включено отображение.
-        Контролирует частоту кадров.
+    def render_information_in_window(self) -> None:
         """
-        
-        
-
-        try:
-            delta = WINDOW_DELTA_MATCH_FPS / self.get_fps()
-        except ZeroDivisionError:
-            delta = 1
-        self.__smoth_deltas.append(delta)
-
-        if len(self.__smoth_deltas) > 50:
-            self.__smoth_deltas.pop(0)
-        
-
-        if self.__view_information_in_title:
-            pygame.display.set_caption(f"{self._title} | FPS: {int(self.get_fps())}/{self.__waited_fps} | RENDER TIME: {self.get_render_time()}ms | DELTA: {self.get_delta(True):.2f}")
+        Отображение информации о частоте кадров в окне.
+        Обычно включается методом set_view_information_in_window(). Но если вы используете OpenGL, то нужен этот прямой вызов.
+        """
         if self.__view_information_in_window:
             
             self.__text_field_fps.set_text(f"FPS: {int(self.get_fps())} / {self.__waited_fps}")
@@ -236,9 +218,11 @@ class AppWindow(window._Window):
                 for i in range(len(self.__frame_time_array)-1):
                     x1 = graph_x + (i * graph_width / 100)
                     x2 = graph_x + ((i+1) * graph_width / 100)
-                    y1 = graph_y + graph_height - (self.__frame_time_array[i] * graph_height / max_time)
-                    y2 = graph_y + graph_height - (self.__frame_time_array[i+1] * graph_height / max_time)
-                    pygame.draw.line(self.surf, (0,0,0), (x1,y1), (x2,y2), 1)
+                    try:
+                        y1 = graph_y + graph_height - (self.__frame_time_array[i] * graph_height / max_time)
+                        y2 = graph_y + graph_height - (self.__frame_time_array[i+1] * graph_height / max_time)
+                        pygame.draw.line(self.surf, (0,0,0), (x1,y1), (x2,y2), 1)
+                    except: ...
 
                 # Отрисовка отметок FPS
                 fps_marks = [30, 60, 120]  # Отметки FPS для отображения
@@ -251,11 +235,46 @@ class AppWindow(window._Window):
                         self.__text_field_frame_grafic_fps.set_color('red')
                         self.__text_field_frame_grafic_fps.render(self.surf, (graph_x + graph_width + 5, y - 8))
 
-        self._update()
-        self._update_state()
+
+
+    def update(self) -> None:
+        """Обновление состояния приложения.
+        
+        Вызывает внутренние методы для обновления состояния окна и обработки событий.
+        Обновляет информацию в заголовке окна, если включено отображение.
+        Контролирует частоту кадров.
+        """
+        
         
 
+        try:
+            delta = WINDOW_DELTA_MATCH_FPS / self.get_fps()
+        except ZeroDivisionError:
+            delta = 1
+        self.__smoth_deltas.append(delta)
+
+        if len(self.__smoth_deltas) > 50:
+            self.__smoth_deltas.pop(0)
+        
+
+        if self.__view_information_in_title:
+            pygame.display.set_caption(f"{self._title} | FPS: {int(self.get_fps())}/{self.__waited_fps} | RENDER TIME: {self.get_render_time()}ms | DELTA: {self.get_delta(True):.2f}")
+        if self.__view_information_in_window:
+            self.render_information_in_window()
+
+        
+        self._update()
+        
+            
+        self._update_state()
+        
         self.__clock.tick(self.__waited_fps)    
+
+    def flip(self) -> None:
+        """Обновление окна.
+        Обновляет содержимое окна, отображая изменения.
+        """
+        pygame.display.flip()
         
     @property
     def surf(self) -> pygame.Surface:

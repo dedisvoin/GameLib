@@ -6,7 +6,9 @@ from src.core.settings import (
     WINDOW_SIZE,
     WINDOW_TITLE,
     WINDOW_VSYNC,
-    WINDOW_QUIT_KEY
+    WINDOW_QUIT_KEY,
+
+    CONST_WINDOW_USE_OPENGL
 )
 
 from typing import (
@@ -173,7 +175,13 @@ class _Window:
 
     def _update(self) -> None:
         """Обновление окна pygame."""
-        pygame.display.update()
+        if CONST_WINDOW_USE_OPENGL | self.__flags:
+            pygame.display.flip()
+        else:
+            pygame.display.update()
+
+            
+            
 
     def _update_state(self) -> None:
         """Обновление состояния окна pygame."""

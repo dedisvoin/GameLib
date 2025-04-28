@@ -1,3 +1,4 @@
 pygame == 2.6.1
 keyboard == 0.13.5
 mouse == 0.7.1
+noise == 1.2.2

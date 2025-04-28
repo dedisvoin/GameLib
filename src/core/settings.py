@@ -33,6 +33,12 @@ CONST_WINDOW_FULLSCREEN: Final = pygame.FULLSCREEN
 # 'CONST_WINDOW_NOFRAME' constant for window can be noframe
 CONST_WINDOW_NOWRAME: Final = pygame.NOFRAME
 
+# 'CONST_WINDOW_USE_OPENGL' constant for window can be use opengl
+CONST_WINDOW_USE_OPENGL: Final = pygame.OPENGL
+
+# 'CONST_WINDOW_USE_DOUBLE_BUFFER' constant for window can be use double buffer
+CONST_WINDOW_USE_DOUBLE_BUFFER: Final = pygame.DOUBLEBUF
+
 # `CONST_WINDOW_MAX_FPS` constant for window can be max fps
 CONST_WINDOW_MAX_FPS: Final = 10000
 
