@@ -25,6 +25,10 @@ points = [
 ]
 
 
+rect_pos_1 = [800, 600]
+rect_size_1 = [200, 100]
+rect_size_2 = [70, 100]
+
 while window.is_opened:
     window.fill()
     if point_in_polygon(MouseObject.get_position_on_window(), points):
@@ -36,4 +40,13 @@ while window.is_opened:
         draw_circle(window.surf, [500, 250], 100, "green")
     else:
         draw_circle(window.surf, [500, 250], 100, "red")
+
+    if collision_rect_rect([*rect_pos_1, *rect_size_1], [*MouseObject.get_position_on_window(), *rect_size_2]):
+        draw_rect(window.surf, rect_pos_1, rect_size_1, "green")
+    else:
+        draw_rect(window.surf, rect_pos_1, rect_size_1, "red")
+
+    draw_rect(window.surf, MouseObject.get_position_on_window(), rect_size_2, "blue")
     window.update()
+
+    
