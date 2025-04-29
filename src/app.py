@@ -17,7 +17,7 @@ Dependencies:
     src.core.window: Базовый модуль для работы с окном
 """
 
-from src.core.settings import WINDOW_SIZE, WINDOW_TITLE, WINDOW_VSYNC, WINDOW_WAITED_FPS, WINDOW_BG_COLOR, WINDOW_DELTA_MATCH_FPS
+from src.core.settings import WINDOW_FPS_CHECK_TIMEOUT, WINDOW_SIZE, WINDOW_TITLE, WINDOW_VSYNC, WINDOW_WAITED_FPS, WINDOW_BG_COLOR, WINDOW_DELTA_MATCH_FPS
 from src.core import window
 
 from src.render.text import TextField
@@ -198,10 +198,17 @@ class AppWindow(window._Window):
             self.__text_field_vsync.render(self.surf, (5, 50))
 
             # График frametime
-            
-            self.__frame_time_array.append(self.get_render_time())
-            if len(self.__frame_time_array) > 100:
-                self.__frame_time_array.pop(0)
+            current_time = pygame.time.get_ticks()
+            if not hasattr(self, '_last_sample_time'):
+                self._last_sample_time = current_time
+                
+            # Обновляем график каждые 100мс
+            if current_time - self._last_sample_time >= WINDOW_FPS_CHECK_TIMEOUT:
+                current_fps = self.get_fps()
+                self.__frame_time_array.append(current_fps)
+                if len(self.__frame_time_array) > 100:
+                    self.__frame_time_array.pop(0)
+                self._last_sample_time = current_time
             
             # Отрисовка графика
             graph_height = 90
@@ -214,27 +221,25 @@ class AppWindow(window._Window):
             
             # Отрисовка линий графика
             if len(self.__frame_time_array) > 1:
-                max_time = max(self.__frame_time_array)
+                max_fps = max(max(self.__frame_time_array), 120)  # Фиксированный максимум для стабильной шкалы
                 for i in range(len(self.__frame_time_array)-1):
                     x1 = graph_x + (i * graph_width / 100)
                     x2 = graph_x + ((i+1) * graph_width / 100)
                     try:
-                        y1 = graph_y + graph_height - (self.__frame_time_array[i] * graph_height / max_time)
-                        y2 = graph_y + graph_height - (self.__frame_time_array[i+1] * graph_height / max_time)
+                        y1 = graph_y + graph_height - (self.__frame_time_array[i] * graph_height / max_fps)
+                        y2 = graph_y + graph_height - (self.__frame_time_array[i+1] * graph_height / max_fps)
                         pygame.draw.line(self.surf, (0,0,0), (x1,y1), (x2,y2), 1)
                     except: ...
 
                 # Отрисовка отметок FPS
                 fps_marks = [30, 60, 120]  # Отметки FPS для отображения
                 for fps in fps_marks:
-                    ms_per_frame = 1000 / fps  # Преобразование FPS в миллисекунды
-                    if ms_per_frame < max_time:
-                        y = graph_y + graph_height - (ms_per_frame * graph_height / max_time)
-                        pygame.draw.line(self.surf, (200,0,0), (graph_x, y+3), (graph_x + graph_width, y + 3), 1)
+                    if fps <= max_fps:
+                        y = graph_y + graph_height - (fps * graph_height / max_fps)
+                        pygame.draw.line(self.surf, (200,0,0), (graph_x, y-3), (graph_x + graph_width, y - 3), 1)
                         self.__text_field_frame_grafic_fps.set_text(f"FPS: {fps}")
                         self.__text_field_frame_grafic_fps.set_color('red')
-                        self.__text_field_frame_grafic_fps.render(self.surf, (graph_x + graph_width + 5, y - 8))
-
+                        self.__text_field_frame_grafic_fps.render(self.surf, (graph_x + graph_width + 5, y - 8)) 
 
 
     def update(self) -> None:

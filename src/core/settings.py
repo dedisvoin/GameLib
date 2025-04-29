@@ -22,6 +22,7 @@ WINDOW_QUIT_KEY = 'esc'                                                    # ( w
 WINDOW_WAITED_FPS = 60                                                # ( window max framerate )
 WINDOW_BG_COLOR = (255, 255, 255)                                 # ( window back ground color )
 WINDOW_DELTA_MATCH_FPS = 60                                            # ( fps for match delta )
+WINDOW_FPS_CHECK_TIMEOUT = 50                   # ( informational graphick fps check time 'ms' )
 
 
 # 'CONST_WINDOW_RESIZABLE' constant for window can be resized

@@ -4,7 +4,6 @@ from time import time, sleep
 from uuid import uuid4
 import math
 
-
 PROMISE_INDEX: int = 0
 
 class CancelledError(Exception):

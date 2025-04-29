@@ -15,7 +15,6 @@ class BaseRectCollider:
         self.__type = type
         self.__pos = Vector2D(0, 0)
         self.__speed = Vector2D(0, 0)
-        self.__force = Vector2D(0, 0)
         self.__mass = 1
         self.__friction = 0.9
 
@@ -25,6 +24,22 @@ class BaseRectCollider:
     @property
     def pos(self) -> Vector2D:
         return self.__pos
+    
+    @print
+    def speed(self) -> Vector2D:
+        return self.__speed
+    
+    def set_friction(self, value: float = 0) -> None:
+        self.__friction = value
+
+    def get_friction(self) -> float:
+        return self.__friction
+    
+    def set_mass(self, value: float = 1) -> None:
+        self.__mass = value
+
+    def get_mass(self) -> float:
+        return self.__mass
 
     def get_size(self) -> tuple[int, int]:
         return self.__size
@@ -39,7 +54,10 @@ class BaseRectCollider:
         self.__pos = Vector2D.from_tuple(pos)
 
     def set_id(self, id: int | str | None):
-        self.__id = id if id is not None else uuid4()
+        self.__id = str(id) if id is not None else uuid4()
+
+    def get_id(self) -> str:
+        return self.__id
 
     def create(self, pos: tuple[int, int], id: int | str | None = None) -> 'BaseRectCollider':
         obj = copy(self)
@@ -63,12 +81,23 @@ class RectCollideLayer:
     
     def get_collider(self, id: int | str) -> BaseRectCollider | None:
         for collider in self.__colliders:
-            if collider.get_id() == id:
+            if collider.get_id() == str(id):
                 return collider
         return None
     
     def get_colliders_by_type(self, type: str) -> list[BaseRectCollider]:
         return list(filter(lambda collider: collider.get_type() == type, self.__colliders))
+    
+    def update(self):
+        dynamic_colliders = self.get_colliders_by_type(COLLIDER_DYNAMIC)
+        
+        for d_collider in dynamic_colliders:
+
+            for s_collider
+            
+
+            
+        
     
     def view(self, surf: pygame.Surface):
         for collider in self.__colliders:

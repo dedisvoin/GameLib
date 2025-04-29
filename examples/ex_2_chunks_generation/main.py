@@ -11,9 +11,9 @@ import threading
 
 window = AppWindow((800, 600), "2D World Generator", vsync=False)
 window.set_view_information_in_window(True)
-window.set_waited_fps(120)
+window.set_waited_fps(60)
 
-CHUNK_SIZE = 32
+CHUNK_SIZE = 8
 TILE_SIZE = 5
 VIEW_DISTANCE = 15
 
