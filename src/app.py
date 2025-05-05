@@ -80,6 +80,13 @@ class AppWindow(window._Window):
         """
         return self._size
     
+    def get_surf_size(self) -> tuple[int, int]:
+        """Получить размер поверхности окна в пикселях (ширина, высота).
+        Returns:
+            tuple[int, int]: Размер поверхности окна в пикселях (ширина, высота)
+        """
+        return self._surf.get_size()
+    
     def get_at_size(self) -> tuple[int, int]:
         """Получить размер окна в пикселях (ширина, высота).
         Returns:

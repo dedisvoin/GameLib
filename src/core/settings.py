@@ -28,6 +28,9 @@ WINDOW_FPS_CHECK_TIMEOUT = 50                   # ( informational graphick fps c
 # 'CONST_WINDOW_RESIZABLE' constant for window can be resized
 CONST_WINDOW_RESIZABLE: Final = pygame.RESIZABLE 
 
+# 'CONST_WINDOW_SCALE' constant for window can saled
+CONST_WINDOW_SCALE: Final = pygame.SCALED
+
 # 'CONST_WINDOW_FULLSCREEN' constant for window can be fullscreen
 CONST_WINDOW_FULLSCREEN: Final = pygame.FULLSCREEN
 

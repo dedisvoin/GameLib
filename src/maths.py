@@ -85,7 +85,7 @@ class Vector2D:
         Returns:
             tuple[float, float]: Координаты вектора.
         """
-        return (self.x, self.y)
+        return [self.x, self.y]
 
     @xy.setter
     def xy(self, value: tuple[float, float]) -> None:
