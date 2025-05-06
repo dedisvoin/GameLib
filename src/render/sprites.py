@@ -5,10 +5,10 @@
 import pygame
 import enum
 import time
-
+from typing import Final, final
 
 from src.maths import Vector2D
-
+@final
 class OffSet(enum.Enum):
     """
     Перечисление для определения точки привязки спрайта.
@@ -33,7 +33,7 @@ class OffSet(enum.Enum):
     LEFT_CENTER = 7
     RIGHT_CENTER = 8
     
-
+@final
 class BaseSprite:
     """
     Базовый класс для работы со спрайтами.
@@ -62,6 +62,10 @@ class BaseSprite:
         self.__offset: tuple[int, int] | OffSet = OffSet.CENTER
         self.__flip_x = False
         self.__flip_y = False
+
+    def get_real_sprite(self) -> pygame.Surface:
+        """Получить оригинальное изображение"""
+        return self.__real_sprite
 
     def get_real_size(self) -> tuple[int, int]:
         """Получить размер оригинального изображения"""
@@ -114,6 +118,7 @@ class BaseSprite:
     def set_offset(self, offset: tuple[int, int] | OffSet):
         """Установить точку привязки спрайта"""
         self.__offset = offset
+        return self
 
     def get_offset(self) -> tuple[int, int]:
         """Получить текущую точку привязки"""
@@ -138,6 +143,16 @@ class BaseSprite:
         sprite = pygame.transform.rotate(sprite, self.__angle)
         
         self.__final_sprite = sprite
+
+    def copy(self) -> 'BaseSprite':
+        """Создать копию спрайта"""
+        sprite = BaseSprite(self.__real_sprite)
+        sprite.set_angle(self.__angle)
+        sprite.set_scale(self.__scale)
+        sprite.set_offset(self.__offset)
+        sprite.set_flip_x(self.__flip_x)
+        sprite.set_flip_y(self.__flip_y)    
+        return sprite
 
     def base_render(self, surf: pygame.Surface, pos: tuple[int, int]):
         """
@@ -171,6 +186,7 @@ class BaseSprite:
         else:
             surf.blit(self.__final_sprite, (pos[0] - self.__offset[0], pos[1] - self.__offset[1]))
 
+@final
 class BaseSpriteAnimation:
     """
     Класс для создания и управления анимацией спрайтов.
@@ -201,44 +217,55 @@ class BaseSpriteAnimation:
         self.__offset: tuple[int, int] | OffSet = OffSet.CENTER
         self.__flip_x = False
         self.__flip_y = False
+
+    def get_frames(self) -> list[BaseSprite]:
+        """Получить список кадров анимации"""
+        return self.__frames
     
     def set_flip_x(self, flip_x: bool):
         """Установить отражение по горизонтали для всех кадров"""
         self.__flip_x = flip_x
         for frame in self.__frames:
             frame.set_flip_x(flip_x)
+        return self
 
     def set_flip_y(self, flip_y: bool):
         """Установить отражение по вертикали для всех кадров"""
         self.__flip_y = flip_y
         for frame in self.__frames:
             frame.set_flip_y(flip_y)
+        return self
 
     def flip_x(self):
         """Отразить все кадры по горизонтали"""
         self.set_flip_x(not self.__flip_x)
+        return self
 
     def flip_y(self):
         """Отразить все кадры по вертикали"""
         self.set_flip_y(not self.__flip_y)
+        return self
 
     def set_scale(self, scale: float):
         """Установить масштаб для всех кадров"""
         self.__scale = scale
         for frame in self.__frames:
             frame.set_scale(scale)
+        return self
 
     def set_angle(self, angle: float):
         """Установить угол поворота для всех кадров"""
         self.__angle = angle
         for frame in self.__frames:
             frame.set_angle(angle)
+        return self
 
     def rotate(self, angle: float):
         """Повернуть все кадры на заданный угол"""
         self.__angle += angle
         for frame in self.__frames:
             frame.rotate(angle)
+        return self
 
     def get_angle(self) -> float:
         """Получить текущий угол поворота"""
@@ -247,6 +274,7 @@ class BaseSpriteAnimation:
     def set_offset(self, offset: tuple[int, int] | OffSet):
         """Установить точку привязки анимации"""
         self.__offset = offset
+        return self
 
     def get_offset(self) -> tuple[int, int]:
         """Получить текущую точку привязки"""
@@ -307,6 +335,21 @@ class BaseSpriteAnimation:
                 else:
                     self.__current_frame = len(self.__frames) - 1
 
+    def copy(self) -> 'BaseSpriteAnimation':
+        """Получить копию анимации"""
+        animation = BaseSpriteAnimation()
+        for frame in self.__frames:
+            animation.add_frame(frame.copy())
+        animation.set_angle(self.__angle)
+        animation.set_scale(self.__scale)
+        animation.set_offset(self.__offset)
+        animation.set_flip_x(self.__flip_x)
+        animation.set_flip_y(self.__flip_y)
+        animation.set_looped(self.__looped)
+        animation.set_frame_time(self.__frame_time)
+
+        return animation
+
     def render(self, surf: pygame.Surface, pos: tuple[int, int]):
         """
         Отрисовать текущий кадр анимации.
@@ -317,6 +360,7 @@ class BaseSpriteAnimation:
         """
         self.get_current_frame().base_render(surf, pos)
 
+@final
 def load_base_sprite_animation(path: str, frames_count: int, frame_time: float, looped: bool = False) -> BaseSpriteAnimation:
     """
     Создает анимацию из файлов изображений.
@@ -338,6 +382,7 @@ def load_base_sprite_animation(path: str, frames_count: int, frame_time: float, 
     animation.set_looped(looped)
     return animation
    
+@final
 def load_base_sprite(path: str) -> BaseSprite:
     """
     Загружает спрайт из файла.
@@ -350,7 +395,7 @@ def load_base_sprite(path: str) -> BaseSprite:
     """
     return BaseSprite(pygame.image.load(path))
 
-
+@final
 class SpriteObject(BaseSprite):
     def __init__(self):
         super().__init__()
@@ -378,6 +423,7 @@ class SpriteObject(BaseSprite):
         """
         self.base_render(surf, self.__pos)
     
+@final
 class SpriteAnimationObject(BaseSpriteAnimation):
     def __init__(self):
         super().__init__()
@@ -386,6 +432,7 @@ class SpriteAnimationObject(BaseSpriteAnimation):
     def set_pos(self, pos: tuple[int, int] | Vector2D):
         """Установить позицию спрайта"""
         self.__pos = Vector2D.from_tuple(pos) if isinstance(pos, (tuple, list)) else pos
+        return self
 
     def get_pos(self) -> Vector2D:
         """Получить позицию спрайта"""
@@ -394,6 +441,22 @@ class SpriteAnimationObject(BaseSpriteAnimation):
     def move(self, move_vector: Vector2D):
         """Переместить спрайт на заданный вектор"""
         self.__pos += move_vector
+
+    def copy(self) -> 'BaseSpriteAnimation':
+        """Получить копию анимации"""
+        animation = SpriteAnimationObject()
+        for frame in self.get_frames():
+            animation.add_frame(frame.copy())
+        animation.set_angle(self.get_angle())
+        animation.set_scale(self.get_scale())
+        animation.set_offset(self.get_offset())
+        animation.set_flip_x(self.get_flip_x())
+        animation.set_flip_y(self.get_flip_y())
+        animation.set_looped(self.get_looped())
+        animation.set_frame_time(self.get_frame_time())
+        animation.set_pos(self.get_pos())
+
+        return animation
 
     def render(self, surf: pygame.Surface):
         """
@@ -404,6 +467,12 @@ class SpriteAnimationObject(BaseSpriteAnimation):
         """
         super().render(surf, self.__pos.xy)
 
+
+type UnionSprite = SpriteObject | BaseSprite
+type UnionAnimation = SpriteAnimationObject | BaseSpriteAnimation
+type UnionSpriteOrAnimation = UnionSprite | UnionAnimation
+
+@final
 def load_sprite_animation(path: str, frames_count: int, frame_time: float, looped: bool = False) -> SpriteAnimationObject:
     """
     Создает анимацию из файлов изображений.
@@ -423,13 +492,14 @@ def load_sprite_animation(path: str, frames_count: int, frame_time: float, loope
     animation.set_looped(looped)
     return animation
 
-def convert_pygame_color_to_tuple(color: pygame.Color) -> tuple[int, int, int]:
+@final
+def convert_color(color: pygame.Color) -> tuple[int, int, int]:
     """
     Преобразует цвет pygame в кортеж
     """
     return color.r, color.g, color.b
 
-
+@final
 def load_sprite_sheet(path: str, debug: bool = True) -> list[BaseSprite]:
     """
     Загружает спрайты из файла находя их по определенным меткам
@@ -453,33 +523,33 @@ def load_sprite_sheet(path: str, debug: bool = True) -> list[BaseSprite]:
 
     sprite_lines_y = []
     for y in range(height):
-        if convert_pygame_color_to_tuple(sprite_sheet.get_at((0, y))) == (255, 0, 0):
+        if convert_color(sprite_sheet.get_at((0, y))) == (255, 0, 0):
             sprite_lines_y.append(y)
 
     for line_y in sprite_lines_y:
         x = 0
         while x < width:
-            color = convert_pygame_color_to_tuple(sprite_sheet.get_at((x, line_y)))
+            color = convert_color(sprite_sheet.get_at((x, line_y)))
             if color == (0, 255, 0):
                 pos = (x, line_y)
                 size = [0, 0]
                 
                 # Find width
                 for dx in range(x, width):
-                    color = convert_pygame_color_to_tuple(sprite_sheet.get_at((dx, line_y)))
+                    color = convert_color(sprite_sheet.get_at((dx, line_y)))
                     if color == (0, 0, 255):
                         size[0] = dx - pos[0]
                         break
                 
                 # Find height
                 for dy in range(line_y, height):
-                    color = convert_pygame_color_to_tuple(sprite_sheet.get_at((x, dy)))
+                    color = convert_color(sprite_sheet.get_at((x, dy)))
                     if color == (0, 0, 255):
                         size[1] = dy - pos[1]
                         break
                 
                 if size[0] > 0 and size[1] > 0:
-                    if debug: print(f' ∟ Sprite pos: {pos}, size: {size}')
+                    if debug: print(f' | Sprite pos: {pos}, size: {size}')
                     pos = [pos[0] + 1, pos[1] + 1]
                     size = [size[0] - 1, size[1] - 1]
                     sprite = BaseSprite(sprite_sheet.subsurface(pygame.Rect(pos, size)))
@@ -490,4 +560,153 @@ def load_sprite_sheet(path: str, debug: bool = True) -> list[BaseSprite]:
     
     return sprites
 
+@final
+def load_sprite_sheet_grid(path: str, sprite_width: int, sprite_height: int) -> list[BaseSprite]:
+    """
+    Загружает спрайты из файла, разделяя его на равные части по сетке.
+    Возвращает список BaseSprite.
     
+    Args:
+        path: Путь к файлу изображения (.png, .jpg, .bmp)
+        sprite_width: Ширина одного спрайта
+        sprite_height: Высота одного спрайта
+        
+    Returns:
+        list[BaseSprite]: Список спрайтов
+    """
+    sprites = []
+    sprite_sheet = pygame.image.load(path).convert_alpha()
+    sheet_width, sheet_height = sprite_sheet.get_size()
+    
+    for y in range(0, sheet_height, sprite_height):
+        for x in range(0, sheet_width, sprite_width):
+            sprite_rect = pygame.Rect(x, y, sprite_width, sprite_height)
+            sprite = BaseSprite(sprite_sheet.subsurface(sprite_rect))
+            sprites.append(sprite)
+            
+    return sprites
+
+# NOTE: THIS FUNCTION IS NOT FINAL
+def get_sprite_alpha_mask(sprite: pygame.Surface) -> pygame.Surface:
+    """
+    Создает маску прозрачности спрайта.
+    
+    Args:
+        sprite: Исходный спрайт
+        
+    Returns:
+        pygame.Surface: Маска прозрачности (черно-белое изображение)
+    """
+    mask = pygame.Surface(sprite.get_size())
+    mask.fill((0, 0, 0))
+    
+    for y in range(sprite.get_height()):
+        for x in range(sprite.get_width()):
+            if sprite.get_at((x, y))[3] > 0:  # Проверяем альфа-канал
+                mask.set_at((x, y), (255, 255, 255))
+
+
+    
+                
+    return mask
+
+# NOTE: THIS FUNCTION IS NOT FINAL
+def create_outline(data: UnionSpriteOrAnimation, color: tuple[int, int, int] = (0, 0, 0), thickness: int = 1) -> UnionSpriteOrAnimation:
+    """
+    Создает контур вокруг спрайта или анимации возвращает новый спрайт или анимацию с контуром.
+
+    Args:
+        data: Спрайт или анимация, для которой нужно создать контур.
+        color: Цвет контура.
+        thickness: Толщина контура.
+    Returns:
+        Новый спрайт или анимация с контуром.
+    """
+    if isinstance(data, (BaseSprite, SpriteObject)):
+        
+        pygame_sprite = data.get_real_sprite()
+        width, height = pygame_sprite.get_size()
+        new_width = width + thickness * 2
+        new_height = height + thickness * 2
+        new_sprite = pygame.Surface((new_width, new_height), pygame.SRCALPHA)
+        new_sprite.fill((0, 0, 0, 0))
+        
+        # Создаем маску прозрачности
+        mask = get_sprite_alpha_mask(pygame_sprite)
+        
+        # Рисуем контур
+        for t in range(thickness):
+            for y in range(height):
+                for x in range(width):
+                    if mask.get_at((x, y))[0] > 0:
+                        for dx in range(-t-1, t+2):
+                            for dy in range(-t-1, t+2):
+                                nx, ny = x + dx + thickness, y + dy + thickness
+                                if 0 <= nx < new_width and 0 <= ny < new_height:
+                                    new_sprite.set_at((nx, ny), color)
+                                    
+        # Рисуем оригинальный спрайт поверх контура
+        new_sprite.blit(pygame_sprite, (thickness, thickness))
+        
+        # Создаем новый спрайт с контуром
+        result = BaseSprite(new_sprite) if type(data) == BaseSprite else SpriteObject(new_sprite).set_pos(data.get_pos())
+        result.set_angle(data.get_angle())
+        result.set_scale(data.get_scale())
+        result.set_flip_x(data.get_flip_x())
+        result.set_flip_y(data.get_flip_y())
+        result.set_offset(data.get_offset())
+        return result
+        
+    elif isinstance(data, (BaseSpriteAnimation, SpriteAnimationObject)):
+        result = BaseSpriteAnimation() if type(data) == BaseSpriteAnimation else SpriteAnimationObject().set_pos(data.get_pos())
+        for i in range(len(data._BaseSpriteAnimation__frames)):
+            frame = data._BaseSpriteAnimation__frames[i]
+            result.add_frame(create_outline(frame, color, thickness))
+        result.set_frame_time(data.get_frame_time())
+        result.set_looped(data.get_looped())
+        return result
+    
+    return data        
+
+@final
+def scale_all(self, data: UnionSpriteOrAnimation, scale: float) -> UnionSpriteOrAnimation:
+    """
+    Масштабирует спрайт или анимацию.
+    Args:
+        data: Спрайт или анимация, которую нужно масштабировать.
+        scale: Масштаб, на который нужно масштабировать спрайт.
+
+    Returns:
+        Новый спрайт или анимация с масштабированными кадрами.
+    """
+    return list(map(lambda obj: obj.scale(scale), data))
+
+@final
+def set_flip_all(self, data: list[UnionSpriteOrAnimation], flip_x: bool = False, flip_y: bool = False) -> list[UnionSpriteOrAnimation]:
+    """
+    Переворачивает спрайт или анимацию по горизонтали или вертикали.
+    Args:
+        data: Спрайт или анимация, которую нужно перевернуть.
+        flip_x: Если True, спрайт будет перевернут по горизонтали.
+        flip_y: Если True, спрайт будет перевернут по вертикали.
+    Returns:
+        Новый спрайт или анимация с перевернутыми кадрами.
+    """
+    data = list(map(lambda obj: obj.set_flip_x(flip_x)), data)
+    data = list(map(lambda obj: obj.set_flip_y(flip_y)), data)
+    return data
+
+@final
+def flip_all(self, data: list[UnionSpriteOrAnimation], flip_x: bool = False, flip_y: bool = False) -> list[UnionSpriteOrAnimation]:
+    """
+    Переворачивает спрайт или анимацию по горизонтали или вертикали.
+    Args:
+        data: Спрайт или анимация, которую нужно перевернуть.
+        flip_x: Если True, спрайт будет перевернут по горизонтали.
+        flip_y: Если True, спрайт будет перевернут по вертикали.
+    Returns:
+        Новый спрайт или анимация с перевернутыми кадрами.
+    """
+    data = list(map(lambda obj: obj.flip_x(flip_x)), data)
+    data = list(map(lambda obj: obj.flip_y(flip_y)), data)
+    return data
