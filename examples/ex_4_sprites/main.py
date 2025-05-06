@@ -23,6 +23,12 @@ animation = sprites.load_sprite_animation('examples\\ex_4_sprites\\anim*.png', 6
 animation.set_scale(2)
 pos_x = 100
 speed = 2
+
+
+
+ss = sprites.load_sprite_sheet('examples\ex_4_sprites\sprite_sheet.png')
+ss = list(map(lambda x: x.set_scale(10), ss))
+
 while window.is_opened:
     sprite.rotate(3 * window.get_delta())
 
@@ -42,6 +48,10 @@ while window.is_opened:
     if pos_x > 1280 - 30 or pos_x < 40:
         animation.flip_x()
         speed *= -1
+
+
+    for i in range(len(ss)):
+        ss[i].base_render(window.surf, [i * 200, 100])
 
 
     window.update()

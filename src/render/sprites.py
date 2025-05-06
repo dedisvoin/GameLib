@@ -6,6 +6,7 @@ import pygame
 import enum
 import time
 
+
 from src.maths import Vector2D
 
 class OffSet(enum.Enum):
@@ -61,39 +62,50 @@ class BaseSprite:
         self.__offset: tuple[int, int] | OffSet = OffSet.CENTER
         self.__flip_x = False
         self.__flip_y = False
+
+    def get_real_size(self) -> tuple[int, int]:
+        """Получить размер оригинального изображения"""
+        return self.__real_sprite.get_size()
     
     def set_flip_x(self, flip_x: bool):
         """Установить отражение по горизонтали"""
         self.__flip_x = flip_x
         self.update()
+        return self
 
     def set_flip_y(self, flip_y: bool):
         """Установить отражение по вертикали"""
         self.__flip_y = flip_y
         self.update()
+        return self
 
     def flip_x(self):
         """Отразить спрайт по горизонтали"""
         self.set_flip_x(not self.__flip_x)
+        return self
 
     def flip_y(self):
         """Отразить спрайт по вертикали"""
         self.set_flip_y(not self.__flip_y)
+        return self
 
     def set_scale(self, scale: float):
         """Установить масштаб спрайта"""
         self.__scale = scale
         self.update()
+        return self
 
     def set_angle(self, angle: float):
         """Установить угол поворота спрайта"""
         self.__angle = angle
         self.update()
+        return self
 
     def rotate(self, angle: float):
         """Повернуть спрайт на заданный угол"""
         self.__angle += angle
         self.update()
+        return self
 
     def get_angle(self) -> float:
         """Получить текущий угол поворота"""
@@ -410,3 +422,72 @@ def load_sprite_animation(path: str, frames_count: int, frame_time: float, loope
     animation.set_frame_time(frame_time)
     animation.set_looped(looped)
     return animation
+
+def convert_pygame_color_to_tuple(color: pygame.Color) -> tuple[int, int, int]:
+    """
+    Преобразует цвет pygame в кортеж
+    """
+    return color.r, color.g, color.b
+
+
+def load_sprite_sheet(path: str, debug: bool = True) -> list[BaseSprite]:
+    """
+    Загружает спрайты из файла находя их по определенным меткам
+    красный пиксель - начало строки со спрайтами
+    целеный пиксель - метка начала спрайта левый верхний угол спрайта
+    синий пискель метка для указания ширины и высоты спрайта
+
+    args:
+        path: Путь к файлу изображения (.png, .jpg, .bmp)
+        debug: Флаг для вывода отладочной информации
+    returns:
+        list[BaseSprite]: Список спрайтов
+    """
+    sprites = []
+    if debug: print(f"From '{path}' loading sprite-sheet ")
+    sprite_sheet = pygame.image.load(path)
+    sprite_sheet = sprite_sheet.convert_alpha()
+    width, height = sprite_sheet.get_size()
+    
+    start_time = time.time()
+
+    sprite_lines_y = []
+    for y in range(height):
+        if convert_pygame_color_to_tuple(sprite_sheet.get_at((0, y))) == (255, 0, 0):
+            sprite_lines_y.append(y)
+
+    for line_y in sprite_lines_y:
+        x = 0
+        while x < width:
+            color = convert_pygame_color_to_tuple(sprite_sheet.get_at((x, line_y)))
+            if color == (0, 255, 0):
+                pos = (x, line_y)
+                size = [0, 0]
+                
+                # Find width
+                for dx in range(x, width):
+                    color = convert_pygame_color_to_tuple(sprite_sheet.get_at((dx, line_y)))
+                    if color == (0, 0, 255):
+                        size[0] = dx - pos[0]
+                        break
+                
+                # Find height
+                for dy in range(line_y, height):
+                    color = convert_pygame_color_to_tuple(sprite_sheet.get_at((x, dy)))
+                    if color == (0, 0, 255):
+                        size[1] = dy - pos[1]
+                        break
+                
+                if size[0] > 0 and size[1] > 0:
+                    if debug: print(f' ∟ Sprite pos: {pos}, size: {size}')
+                    pos = [pos[0] + 1, pos[1] + 1]
+                    size = [size[0] - 1, size[1] - 1]
+                    sprite = BaseSprite(sprite_sheet.subsurface(pygame.Rect(pos, size)))
+                    sprites.append(sprite)
+                x += max(1, size[0])
+            x += 1
+    if debug: print(f"Loaded {len(sprites)} sprites in {round(time.time() - start_time, 2)} seconds\n")
+    
+    return sprites
+
+    
