@@ -8,6 +8,7 @@ import time
 from typing import Final, final
 
 from src.maths import Vector2D
+from src.render import colors
 @final
 class OffSet(enum.Enum):
     """
@@ -62,6 +63,36 @@ class BaseSprite:
         self.__offset: tuple[int, int] | OffSet = OffSet.CENTER
         self.__flip_x = False
         self.__flip_y = False
+
+        self.__alpha = 255
+
+    def get_alpha(self) -> int:
+        """Получить текущий уровень прозрачности"""
+        return self.__alpha
+    
+    def set_alpha(self, alpha: int):
+        """Установить уровень прозрачности от 0 до 255"""
+        self.__alpha = alpha
+        self.update()
+        return self
+    
+    def set_alpha_percent(self, percent: int):
+        """Установить уровень прозрачности от 0 до 100"""
+        self.__alpha = int(percent * 2.55)
+        self.update()
+        return self
+    
+    def set_alpha_float(self, alpha: float):
+        """Установить уровень прозрачности от 0.0 до 1.0"""
+        self.__alpha = int(alpha * 255)
+        self.update()
+        return self
+
+    def set_real_sprite(self, sptite: pygame.Surface):
+        """Установить оригинальное изображение"""
+        self.__real_sprite = sptite
+        self.update()
+        return self
 
     def get_real_sprite(self) -> pygame.Surface:
         """Получить оригинальное изображение"""
@@ -141,6 +172,7 @@ class BaseSprite:
         sprite = pygame.transform.flip(self.__real_sprite, self.__flip_x, self.__flip_y)
         sprite = pygame.transform.scale(sprite, (int(self.__real_sprite.get_width() * self.__scale), int(self.__real_sprite.get_height() * self.__scale)))
         sprite = pygame.transform.rotate(sprite, self.__angle)
+        sprite.set_alpha(self.__alpha)
         
         self.__final_sprite = sprite
 
@@ -217,10 +249,43 @@ class BaseSpriteAnimation:
         self.__offset: tuple[int, int] | OffSet = OffSet.CENTER
         self.__flip_x = False
         self.__flip_y = False
+        self.__alpha = 255
+
+    def get_alpha(self) -> int:
+        """Получить текущий уровень прозрачности"""
+        return self.__alpha
+    
+    def set_alpha(self, alpha: int):
+        """Установить уровень прозрачности для всех кадров от 0 до 255"""
+        self.__alpha = alpha
+        for frame in self.__frames:
+            frame.set_alpha(alpha)
+        return self
+    
+    def set_alpha_percent(self, percent: int):
+        """Установить уровень прозрачности для всех кадров в процентах от 0 до 100"""
+        self.__alpha = int(2.55 * percent)
+        for frame in self.__frames:
+            frame.set_alpha(self.__alpha)
+        return self
+    
+    def set_alpha_float(self, alpha: float):
+        """Установить уровень прозрачности для всех кадров в процентах от 0.0 до 1.0"""
+        self.__alpha = int(255 * alpha)
+        for frame in self.__frames:
+            frame.set_alpha(self.__alpha)
+        return self
+
+
 
     def get_frames(self) -> list[BaseSprite]:
         """Получить список кадров анимации"""
         return self.__frames
+    
+    def clear_frames(self):
+        """Очистить список кадров анимации"""
+        self.__frames.clear()
+        return self
     
     def set_flip_x(self, flip_x: bool):
         """Установить отражение по горизонтали для всех кадров"""
@@ -315,10 +380,12 @@ class BaseSpriteAnimation:
     def set_looped(self, looped: bool):
         """Установить зацикленность анимации"""
         self.__looped = looped
+        return self
 
     def set_frame_time(self, frame_time: float):
         """Установить время показа одного кадра"""
         self.__frame_time = frame_time
+        return self
 
     def update(self):
         """Обновить состояние анимации"""
@@ -586,31 +653,63 @@ def load_sprite_sheet_grid(path: str, sprite_width: int, sprite_height: int) -> 
             
     return sprites
 
-# NOTE: THIS FUNCTION IS NOT FINAL
-def get_sprite_alpha_mask(sprite: pygame.Surface) -> pygame.Surface:
+
+@final
+def fill(data: UnionSpriteOrAnimation, color: tuple[int, int, int] | colors.Color = (0, 0, 0)) -> UnionSpriteOrAnimation:
     """
-    Создает маску прозрачности спрайта.
-    
+    Заполняет спрайт или анимацию заданным цветом. Игнорирует прозрачные пиксели.
     Args:
-        sprite: Исходный спрайт
-        
+        data: Спрайт или анимация, которую нужно заполнить.
+        color: Цвет, которым нужно заполнить спрайт или анимацию.
+
     Returns:
-        pygame.Surface: Маска прозрачности (черно-белое изображение)
+        Спрайт или анимация с заполненным цветом.
     """
-    mask = pygame.Surface(sprite.get_size())
-    mask.fill((0, 0, 0))
+    color = color() if isinstance(color, colors.Color) else color
+    if isinstance(data, (BaseSprite, SpriteObject)):
+        sprite = data.get_real_sprite()
+        sprite_copy = sprite.copy()
+        white_pixels = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
+        white_pixels.fill((color[0], color[1], color[2], 255))
+        sprite_copy.blit(white_pixels, (0, 0), special_flags=pygame.BLEND_MAX)
+        sprite_copy.blit(white_pixels, (0, 0), special_flags=pygame.BLEND_MIN)
+        sc = data.copy()
+        return sc.set_real_sprite(sprite_copy)
+    elif isinstance(data, (BaseSpriteAnimation, SpriteAnimationObject)):
+        new_animation = data.copy().clear_frames()
+        for frame in data.get_frames():
+            new_animation.add_frame(paint(frame, color))
+        return new_animation
+
+
+@final
+def paint(data: UnionSpriteOrAnimation, color: tuple[int, int, int] | colors.Color = (0, 0, 0)) -> UnionSpriteOrAnimation:
+    """
+    Красит спрайт или анимацию заданным цветом. Игнорирует прозрачные пиксели.
+    Args:
+        data: Спрайт или анимация, которую нужно заполнить.
+        color: Цвет, которым нужно заполнить спрайт или анимацию.
+
+    Returns:
+        Спрайт или анимация с заполненным цветом.
+    """
+    color = color() if isinstance(color, colors.Color) else color
+    if isinstance(data, (BaseSprite, SpriteObject)):
+        sprite = data.get_real_sprite()
+        sprite_copy = sprite.copy()
+        white_pixels = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
+        white_pixels.fill((color[0], color[1], color[2], 255))
+        sprite_copy.blit(white_pixels, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        sc = data.copy()
+        return sc.set_real_sprite(sprite_copy)
+    elif isinstance(data, (BaseSpriteAnimation, SpriteAnimationObject)):
+        new_animation = data.copy().clear_frames()
+        for frame in data.get_frames():
+            new_animation.add_frame(paint(frame, color))
+        return new_animation
     
-    for y in range(sprite.get_height()):
-        for x in range(sprite.get_width()):
-            if sprite.get_at((x, y))[3] > 0:  # Проверяем альфа-канал
-                mask.set_at((x, y), (255, 255, 255))
 
-
-    
-                
-    return mask
-
-# NOTE: THIS FUNCTION IS NOT FINAL
+@final
 def create_outline(data: UnionSpriteOrAnimation, color: tuple[int, int, int] = (0, 0, 0), thickness: int = 1) -> UnionSpriteOrAnimation:
     """
     Создает контур вокруг спрайта или анимации возвращает новый спрайт или анимацию с контуром.
@@ -622,51 +721,30 @@ def create_outline(data: UnionSpriteOrAnimation, color: tuple[int, int, int] = (
     Returns:
         Новый спрайт или анимация с контуром.
     """
+
     if isinstance(data, (BaseSprite, SpriteObject)):
-        
-        pygame_sprite = data.get_real_sprite()
-        width, height = pygame_sprite.get_size()
-        new_width = width + thickness * 2
-        new_height = height + thickness * 2
-        new_sprite = pygame.Surface((new_width, new_height), pygame.SRCALPHA)
+        sprite = data.get_real_sprite()
+        sprite_copy = fill(data, color).get_real_sprite() 
+
+
+        size = [sprite.get_width() + thickness * 2, sprite.get_height() + thickness * 2]
+        new_sprite = pygame.Surface(size, pygame.SRCALPHA)
         new_sprite.fill((0, 0, 0, 0))
+        for dx in range(-thickness, thickness + 1):
+            for dy in range(-thickness, thickness + 1):
+                new_sprite.blit(sprite_copy, (dx + thickness, dy + thickness))
         
-        # Создаем маску прозрачности
-        mask = get_sprite_alpha_mask(pygame_sprite)
-        
-        # Рисуем контур
-        for t in range(thickness):
-            for y in range(height):
-                for x in range(width):
-                    if mask.get_at((x, y))[0] > 0:
-                        for dx in range(-t-1, t+2):
-                            for dy in range(-t-1, t+2):
-                                nx, ny = x + dx + thickness, y + dy + thickness
-                                if 0 <= nx < new_width and 0 <= ny < new_height:
-                                    new_sprite.set_at((nx, ny), color)
-                                    
-        # Рисуем оригинальный спрайт поверх контура
-        new_sprite.blit(pygame_sprite, (thickness, thickness))
-        
-        # Создаем новый спрайт с контуром
-        result = BaseSprite(new_sprite) if type(data) == BaseSprite else SpriteObject(new_sprite).set_pos(data.get_pos())
-        result.set_angle(data.get_angle())
-        result.set_scale(data.get_scale())
-        result.set_flip_x(data.get_flip_x())
-        result.set_flip_y(data.get_flip_y())
-        result.set_offset(data.get_offset())
-        return result
-        
-    elif isinstance(data, (BaseSpriteAnimation, SpriteAnimationObject)):
-        result = BaseSpriteAnimation() if type(data) == BaseSpriteAnimation else SpriteAnimationObject().set_pos(data.get_pos())
-        for i in range(len(data._BaseSpriteAnimation__frames)):
-            frame = data._BaseSpriteAnimation__frames[i]
-            result.add_frame(create_outline(frame, color, thickness))
-        result.set_frame_time(data.get_frame_time())
-        result.set_looped(data.get_looped())
-        return result
+        new_sprite.blit(sprite, (thickness, thickness))
+
+        return data.copy().set_real_sprite(new_sprite)
     
-    return data        
+    if isinstance(data, (BaseSpriteAnimation, SpriteAnimationObject)):
+        copied_animation = data.copy()
+        copied_animation.clear_frames()
+        for frame in data.get_frames():
+            copied_animation.add_frame(create_outline(frame, color, thickness))
+        return copied_animation
+        
 
 @final
 def scale_all(self, data: UnionSpriteOrAnimation, scale: float) -> UnionSpriteOrAnimation:
@@ -680,6 +758,7 @@ def scale_all(self, data: UnionSpriteOrAnimation, scale: float) -> UnionSpriteOr
         Новый спрайт или анимация с масштабированными кадрами.
     """
     return list(map(lambda obj: obj.scale(scale), data))
+
 
 @final
 def set_flip_all(self, data: list[UnionSpriteOrAnimation], flip_x: bool = False, flip_y: bool = False) -> list[UnionSpriteOrAnimation]:
@@ -695,6 +774,7 @@ def set_flip_all(self, data: list[UnionSpriteOrAnimation], flip_x: bool = False,
     data = list(map(lambda obj: obj.set_flip_x(flip_x)), data)
     data = list(map(lambda obj: obj.set_flip_y(flip_y)), data)
     return data
+
 
 @final
 def flip_all(self, data: list[UnionSpriteOrAnimation], flip_x: bool = False, flip_y: bool = False) -> list[UnionSpriteOrAnimation]:
