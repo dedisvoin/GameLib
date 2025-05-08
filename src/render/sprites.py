@@ -1,11 +1,106 @@
 """
 Модуль sprites.py предоставляет классы и функции для работы со спрайтами и анимациями в pygame.
-"""
 
+Основные классы:
+- BaseSprite - базовый класс для работы с отдельными спрайтами
+- BaseSpriteAnimation - класс для создания анимаций из спрайтов
+- SpriteObject - расширенный BaseSprite с поддержкой позиционирования
+- SpriteAnimationObject - расширенный BaseSpriteAnimation с поддержкой позиционирования
+
+Основные функции:
+- load_base_sprite() - загрузка спрайта из файла
+- load_base_sprite_animation() - загрузка анимации из последовательности файлов
+- load_sprite_sheet() - загрузка спрайтов из спрайтового листа с метками
+- load_sprite_sheet_grid() - загрузка спрайтов из спрайтового листа по сетке
+- fill() - заливка спрайта цветом
+- paint() - окраска спрайта
+- create_outline() - создание контура вокруг спрайта
+
+Примеры использования:
+
+1. Загрузка и отрисовка спрайта:
+
+>>> # Создание спрайта из файла
+    sprite = load_base_sprite("player.png")
+
+>>> # Настройка спрайта
+    sprite.set_scale(2.0)  # Масштаб
+    sprite.set_angle(45)   # Поворот
+    sprite.set_flip_x(True)  # Отражение по горизонтали
+
+>>> # Отрисовка
+    sprite.base_render(screen, (100, 100))
+
+
+2. Создание и воспроизведение анимации:
+
+>>> # Загрузка анимации из последовательности файлов
+    animation = load_base_sprite_animation("walk_*.png", frames_count=8, frame_time=0.1, looped=True)
+
+>>> # Настройка анимации
+    animation.set_scale(1.5)
+    animation.set_offset(OffSet.CENTER)
+
+>>> # Обновление и отрисовка в игровом цикле
+    while running:
+        animation.update()
+        animation.render(screen, (200, 200))
+
+
+3. Работа со спрайтовым листом:
+
+>>> # Загрузка спрайтов из листа с метками
+    sprites = load_sprite_sheet("spritesheet.png")
+
+>>> # Загрузка спрайтов из листа по сетке
+    sprites = load_sprite_sheet_grid("spritesheet.png", sprite_width=32, sprite_height=32)
+
+
+4. Эффекты со спрайтами:
+
+>>> # Заливка спрайта цветом
+    colored_sprite = fill(sprite, (255, 0, 0))
+
+>>> # Окраска спрайта
+    painted_sprite = paint(sprite, (0, 255, 0))
+
+>>> # Создание контура
+    outlined_sprite = create_outline(sprite, color=(0, 0, 0), thickness=2)
+
+
+5. Использование SpriteObject для удобного позиционирования:
+
+>>> sprite_obj = SpriteObject()
+    sprite_obj.set_pos((100, 100))
+    sprite_obj.move(Vector2D(10, 0))
+    sprite_obj.render(screen)
+
+
+6. Создание анимированного объекта:
+
+>>> anim_obj = SpriteAnimationObject()
+    anim_obj.add_frame(sprite1)
+    anim_obj.add_frame(sprite2)
+    anim_obj.set_frame_time(0.2)
+    anim_obj.set_looped(True)
+    anim_obj.set_pos((150, 150))
+
+>>> # В игровом цикле:
+    anim_obj.update()
+    anim_obj.render(screen)
+
+
+Дополнительные возможности:
+- Управление прозрачностью через set_alpha()
+- Установка точки привязки спрайта через set_offset()
+- Копирование спрайтов и анимаций через copy()
+- Поддержка различных форматов изображений (.png, .jpg, .bmp)
+"""
 import pygame
 import enum
 import time
-from typing import Final, final
+from typing import Final, final, Literal
+from uuid import uuid4
 
 from src.maths import Vector2D
 from src.render import colors
@@ -34,6 +129,20 @@ class OffSet(enum.Enum):
     LEFT_CENTER = 7
     RIGHT_CENTER = 8
     
+
+
+"""
+    Класс 'BaseSprite' предоставляет базовые функции для работы со спрайтами.
+    Позволяет создавать, масштабировать, поворачивать и отрисовывать спрайты.
+    Также есть возможность кеширования для ускорения отрисовки спрайта при повороте.
+
+    Этот класс является базовым для других классов, таких как SpriteObject и SpriteAnimationObject, а также для TileSet.
+
+    При помощи специальных методов (`paint`, `fill`, `create_outline`) можно применять различные эффекты к спрайту.
+    `paint` позволяет окрасить спрайт в заданный цвет,
+    `fill` заполняет спрайт цветом
+    `create_outline` создает контур вокруг спрайта.
+"""
 @final
 class BaseSprite:
     """
@@ -48,7 +157,7 @@ class BaseSprite:
         __flip_x: Отражение по горизонтали
         __flip_y: Отражение по вертикали
     """
-    def __init__(self, surf: pygame.Surface):
+    def __init__(self, surf: pygame.Surface, caching: bool = False, caching_angles_count: int = 360):
         """
         Инициализация спрайта.
         
@@ -65,6 +174,80 @@ class BaseSprite:
         self.__flip_y = False
 
         self.__alpha = 255
+
+        # флаг который говорит о том что спрайт будет статичным
+        # ~ Спрайт невозможно будет отражать
+        self.__static: bool = False
+
+        self.__caching: bool = caching
+        
+        self.__rotate_cache: dict[int, pygame.Surface] = {}
+        self.__caching_angles_count = caching_angles_count
+        if self.__caching: 
+            self.generate_rotate_cache(self.__caching_angles_count)
+            self.__static = True
+
+    def set_static(self, value: bool):
+        """
+        Установить статичность спрайта
+        """
+        if not self.__caching and value:
+            self.generate_rotate_cache(self.__caching_angles_count)
+            self.__static = True
+        else:
+            self.__static = value
+        
+        return self
+
+    def is_static(self) -> bool:
+        """Проверить является ли спрайт статичным"""
+        return self.__static
+    
+    def is_cached(self) -> bool:
+        """Проверить есть ли кэш поворота у спрайта"""
+        return len(self.__rotate_cache) > 0
+    
+    def is_caching(self) -> bool:
+        """Проверить включено ли кэширование поворота"""
+        return self.__caching   
+     
+    def normalize_angle_to_caching(self, angle: float) -> int:
+        """
+        Нормализация угла для кэша поворота
+        """
+        if angle < 0:
+            angle = 360 + angle
+
+        angle = angle % 360
+        step = 360 // self.__caching_angles_count
+        new_angle = angle - angle % step
+        if new_angle + step > 360:
+            new_angle = 0
+        return new_angle
+        
+
+    def generate_rotate_cache(self, angles_count: int = 360):
+        """
+        Генерация кэша для поворота спрайта
+
+        Args:
+            angles_count: Количество углов для кэша
+        """
+        self.__caching_angles_count = angles_count
+        step = 360 // angles_count
+        for i in range(angles_count):
+            angle = int(round(i * step))
+            self.__rotate_cache[angle] = pygame.transform.rotate(self.__real_sprite, angle)
+        print(f"BaseSprite: Cache generated for {angles_count} angles.")   
+
+    def get_real_size(self) -> tuple[int, int]:
+        """Получить размер оригинального изображения"""
+        return self.__real_sprite.get_size()
+    
+    def get_final_size(self) -> tuple[int, int]:
+        """Получить размер финального изображения"""
+        if self.__final_sprite is None: self.update()
+        return self.__final_sprite.get_size()
 
     def get_alpha(self) -> int:
         """Получить текущий уровень прозрачности"""
@@ -166,12 +349,17 @@ class BaseSprite:
     def get_flip_y(self) -> bool:
         """Получить состояние отражения по вертикали"""
         return self.__flip_y
-    
+
     def update(self):
         """Обновить финальное изображение с учетом всех трансформаций"""
-        sprite = pygame.transform.flip(self.__real_sprite, self.__flip_x, self.__flip_y)
-        sprite = pygame.transform.scale(sprite, (int(self.__real_sprite.get_width() * self.__scale), int(self.__real_sprite.get_height() * self.__scale)))
-        sprite = pygame.transform.rotate(sprite, self.__angle)
+        if not self.__static:
+            sprite = pygame.transform.flip(self.__real_sprite, self.__flip_x, self.__flip_y)
+            sprite = pygame.transform.scale(sprite, (int(self.__real_sprite.get_width() * self.__scale), int(self.__real_sprite.get_height() * self.__scale)))
+            sprite = pygame.transform.rotate(sprite, self.__angle)
+        else:
+            sprite = self.__rotate_cache[self.normalize_angle_to_caching(self.__angle)]
+            sprite = pygame.transform.scale(sprite, (int(sprite.get_width() * self.__scale), int(sprite.get_height() * self.__scale)))
+            sprite = pygame.transform.flip(sprite, self.__flip_x, self.__flip_y)
         sprite.set_alpha(self.__alpha)
         
         self.__final_sprite = sprite
@@ -218,6 +406,13 @@ class BaseSprite:
         else:
             surf.blit(self.__final_sprite, (pos[0] - self.__offset[0], pos[1] - self.__offset[1]))
 
+
+
+"""
+    Класс 'BaseSpriteAnimation' для создания и управления анимацией спрайтов.
+    Является контейнером для класса 'BaseSprite'.
+    Позволяет покадрово отображать кадры анимации. Анимация проигрывается не завися от количества кадров, она на прямую связана с временем отображения одного кадра.
+"""
 @final
 class BaseSpriteAnimation:
     """
@@ -387,7 +582,7 @@ class BaseSpriteAnimation:
         self.__frame_time = frame_time
         return self
 
-    def update(self):
+    def update_animation(self):
         """Обновить состояние анимации"""
         if self.__before_frame_time == 0:
             self.__before_frame_time = time.time()
@@ -427,6 +622,13 @@ class BaseSpriteAnimation:
         """
         self.get_current_frame().base_render(surf, pos)
 
+
+
+"""
+    Метод позволяющий быстро загрузить и собрать анимацию из некоторой последовательности файлов изображений.
+    Формат пути - 'path/to/file_*.png' вмето звездочки подставляется номер кадра.
+    Поддерживаемые расширения файлов: `.png`, `.jpg`, `.bmp`
+"""
 @final
 def load_base_sprite_animation(path: str, frames_count: int, frame_time: float, looped: bool = False) -> BaseSpriteAnimation:
     """
@@ -449,19 +651,34 @@ def load_base_sprite_animation(path: str, frames_count: int, frame_time: float, 
     animation.set_looped(looped)
     return animation
    
+
+
+"""
+    Метод позволяющий быстро загрузить и собрать спрайт из файла изображения.
+    Поддерживаемые расширения файлов: `.png`, `.jpg`, `.bmp`
+    При загрузке можно сразу указать количество углов для кэширования.
+    Если указать None, то кэширование не будет использоваться.
+"""
 @final
-def load_base_sprite(path: str) -> BaseSprite:
+def load_base_sprite(path: str, caching_angles: int | None = None) -> BaseSprite:
     """
     Загружает спрайт из файла.
     
     Args:
         path: Путь к файлу изображения (.png, .jpg, .bmp)
+        caching_angles: Количество углов для кэширования. Если None, то кэширование не используется.
     
     Returns:
         BaseSprite: Загруженный спрайт
     """
-    return BaseSprite(pygame.image.load(path))
+    return BaseSprite(pygame.image.load(path), True if caching_angles is not None else False, caching_angles)
 
+
+
+"""
+    Класс 'SpriteObject' - это класс, который наследуется от класса BaseSprite и добавляет возможность перемещения спрайта по экрану.
+    Имеет методы для получения и установки позиции спрайта.
+"""
 @final
 class SpriteObject(BaseSprite):
     def __init__(self):
@@ -535,9 +752,11 @@ class SpriteAnimationObject(BaseSpriteAnimation):
         super().render(surf, self.__pos.xy)
 
 
+# Базовые типы спрайтов и анимаций
 type UnionSprite = SpriteObject | BaseSprite
 type UnionAnimation = SpriteAnimationObject | BaseSpriteAnimation
 type UnionSpriteOrAnimation = UnionSprite | UnionAnimation
+
 
 @final
 def load_sprite_animation(path: str, frames_count: int, frame_time: float, looped: bool = False) -> SpriteAnimationObject:
@@ -559,12 +778,14 @@ def load_sprite_animation(path: str, frames_count: int, frame_time: float, loope
     animation.set_looped(looped)
     return animation
 
+
 @final
 def convert_color(color: pygame.Color) -> tuple[int, int, int]:
     """
     Преобразует цвет pygame в кортеж
     """
     return color.r, color.g, color.b
+
 
 @final
 def load_sprite_sheet(path: str, debug: bool = True) -> list[BaseSprite]:
@@ -627,6 +848,7 @@ def load_sprite_sheet(path: str, debug: bool = True) -> list[BaseSprite]:
     
     return sprites
 
+
 @final
 def load_sprite_sheet_grid(path: str, sprite_width: int, sprite_height: int) -> list[BaseSprite]:
     """
@@ -657,7 +879,7 @@ def load_sprite_sheet_grid(path: str, sprite_width: int, sprite_height: int) -> 
 @final
 def fill(data: UnionSpriteOrAnimation, color: tuple[int, int, int] | colors.Color = (0, 0, 0)) -> UnionSpriteOrAnimation:
     """
-    Заполняет спрайт или анимацию заданным цветом. Игнорирует прозрачные пиксели.
+    Заполняет спрайт или анимацию заданным цветом. Игнорирует прозрачные пиксели. Возвращает новый спрайт.
     Args:
         data: Спрайт или анимация, которую нужно заполнить.
         color: Цвет, которым нужно заполнить спрайт или анимацию.
@@ -685,7 +907,7 @@ def fill(data: UnionSpriteOrAnimation, color: tuple[int, int, int] | colors.Colo
 @final
 def paint(data: UnionSpriteOrAnimation, color: tuple[int, int, int] | colors.Color = (0, 0, 0)) -> UnionSpriteOrAnimation:
     """
-    Красит спрайт или анимацию заданным цветом. Игнорирует прозрачные пиксели.
+    Красит спрайт или анимацию заданным цветом. Игнорирует прозрачные пиксели. Возвращает новый спрайт.
     Args:
         data: Спрайт или анимация, которую нужно заполнить.
         color: Цвет, которым нужно заполнить спрайт или анимацию.
@@ -726,7 +948,6 @@ def create_outline(data: UnionSpriteOrAnimation, color: tuple[int, int, int] = (
         sprite = data.get_real_sprite()
         sprite_copy = fill(data, color).get_real_sprite() 
 
-
         size = [sprite.get_width() + thickness * 2, sprite.get_height() + thickness * 2]
         new_sprite = pygame.Surface(size, pygame.SRCALPHA)
         new_sprite.fill((0, 0, 0, 0))
@@ -747,23 +968,24 @@ def create_outline(data: UnionSpriteOrAnimation, color: tuple[int, int, int] = (
         
 
 @final
-def scale_all(self, data: UnionSpriteOrAnimation, scale: float) -> UnionSpriteOrAnimation:
+def scale_all(self, data: list[UnionSpriteOrAnimation], scale: float) -> UnionSpriteOrAnimation:
     """
-    Масштабирует спрайт или анимацию.
+    Масштабирует каждый элемент списка.
     Args:
-        data: Спрайт или анимация, которую нужно масштабировать.
+        data: Список спрайтов или анимаций, которые нужно масштабировать.
         scale: Масштаб, на который нужно масштабировать спрайт.
 
     Returns:
         Новый спрайт или анимация с масштабированными кадрами.
     """
-    return list(map(lambda obj: obj.scale(scale), data))
+    return list(map(lambda obj: obj.set_scale(scale), data))
 
 
 @final
 def set_flip_all(self, data: list[UnionSpriteOrAnimation], flip_x: bool = False, flip_y: bool = False) -> list[UnionSpriteOrAnimation]:
     """
     Переворачивает спрайт или анимацию по горизонтали или вертикали.
+    Если значение указано как True, то обьект будет отражен в лево а если False то в право.
     Args:
         data: Спрайт или анимация, которую нужно перевернуть.
         flip_x: Если True, спрайт будет перевернут по горизонтали.
@@ -780,6 +1002,7 @@ def set_flip_all(self, data: list[UnionSpriteOrAnimation], flip_x: bool = False,
 def flip_all(self, data: list[UnionSpriteOrAnimation], flip_x: bool = False, flip_y: bool = False) -> list[UnionSpriteOrAnimation]:
     """
     Переворачивает спрайт или анимацию по горизонтали или вертикали.
+    Если значение указано как True, то обьект будет отражен по выбраной оси. 
     Args:
         data: Спрайт или анимация, которую нужно перевернуть.
         flip_x: Если True, спрайт будет перевернут по горизонтали.
@@ -787,6 +1010,96 @@ def flip_all(self, data: list[UnionSpriteOrAnimation], flip_x: bool = False, fli
     Returns:
         Новый спрайт или анимация с перевернутыми кадрами.
     """
-    data = list(map(lambda obj: obj.flip_x(flip_x)), data)
-    data = list(map(lambda obj: obj.flip_y(flip_y)), data)
+    if flip_x: data = list(map(lambda obj: obj.flip_x()), data)
+    if flip_y: data = list(map(lambda obj: obj.flip_y()), data)
     return data
+
+
+
+class TileType:
+    """
+    Класс для определения типа тайла
+    """
+    def __init__(self, name: str):
+        self.__name = name
+    
+    def get_name(self) -> str: return self.__name
+
+    def __eq__(self, other: "TileType"):
+        if isinstance(other, TileType):
+            return self.get_name() == other.get_name()
+        return False
+    
+    def __ne__(self, other: "TileType"):
+        if isinstance(other, TileType):
+            return self.get_name() != other.get_name()
+        return True
+
+
+DummyTileType = TileType("dummy")
+
+
+# ! ------- 
+# TODO
+# ! ------- 
+class TileConfig:
+    """
+    Класс для конфигурации тайла.
+    """
+    def __init__(self, up_left: bool = None,   up: bool = None,      up_right: bool = None, 
+                       left: bool = None,      center: bool = True,  right: bool = None, 
+                       down_left: bool = None, down: bool = None,    down_right: bool = None, type: TileType = DummyTileType):
+        """
+        Инициализирует объект TileConfig.
+        Необходипо описать окружение тайла, какую позицию он занимает.
+        """
+        self.up_left = up_left
+        self.up = up
+        self.up_right = up_right
+        self.left = left
+        self.center = center
+        self.right = right
+        self.down_left = down_left
+        self.down = down
+        self.down_right = down_right
+
+        self.__type = type
+
+    def get_type(self)  -> TileType:
+        return self.__type
+    
+# ! ------- 
+# TODO
+# ! ------- 
+class Tile(BaseSprite):
+    """
+    Класс для создания тайла.
+    """
+    def __init__(self, sprite: pygame.Surface, config: TileConfig):
+        """
+        Инициализирует объект Tile.
+        Args:
+            sprite: Прямоугольник, который будет использоваться в качестве тайла.
+        """
+        super().__init__(sprite)
+        self.__config = config
+
+    def get_config(self) -> TileConfig:
+        return self.__config
+    
+# ! ------- 
+# TODO
+# ! ------- 
+class TileSet:
+    """
+    Класс для создания набора тайлов.
+    """
+    def __init__(self, tiles: dict[TileConfig, Tile]):
+        """
+        Инициализирует объект TileSet.
+        Args:
+            tiles: Список тайлов, которые будут использоваться в наборе.
+        """
+        self.__tiles = tiles
+
+        
