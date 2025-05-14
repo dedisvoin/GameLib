@@ -2,6 +2,7 @@ import sys
 from time import sleep
 sys.path.append("./")
 import pygame
+
 from src.promises import BasePromise
 from src.app import AppWindow
 from src.maths import get_perlin_noise

@@ -104,6 +104,7 @@ from uuid import uuid4
 
 from src.maths import Vector2D
 from src.render import colors
+from src.debuger import debug_error, debug_info, debug_warning, debug_success
 @final
 class OffSet(enum.Enum):
     """
@@ -802,7 +803,7 @@ def load_sprite_sheet(path: str, debug: bool = True) -> list[BaseSprite]:
         list[BaseSprite]: Список спрайтов
     """
     sprites = []
-    if debug: print(f"From '{path}' loading sprite-sheet ")
+    debug_warning(f'Loading sprite sheet from {path}')
     sprite_sheet = pygame.image.load(path)
     sprite_sheet = sprite_sheet.convert_alpha()
     width, height = sprite_sheet.get_size()
@@ -837,14 +838,14 @@ def load_sprite_sheet(path: str, debug: bool = True) -> list[BaseSprite]:
                         break
                 
                 if size[0] > 0 and size[1] > 0:
-                    if debug: print(f' | Sprite pos: {pos}, size: {size}')
+                    debug_info(f"Found sprite at {pos} with size {size}")
                     pos = [pos[0] + 1, pos[1] + 1]
                     size = [size[0] - 1, size[1] - 1]
                     sprite = BaseSprite(sprite_sheet.subsurface(pygame.Rect(pos, size)))
                     sprites.append(sprite)
                 x += max(1, size[0])
             x += 1
-    if debug: print(f"Loaded {len(sprites)} sprites in {round(time.time() - start_time, 2)} seconds\n")
+    debug_success(f"Loaded {len(sprites)} sprites from '{path}' in {time.time() - start_time} seconds")
     
     return sprites
 
@@ -866,13 +867,13 @@ def load_sprite_sheet_grid(path: str, sprite_width: int, sprite_height: int) -> 
     sprites = []
     sprite_sheet = pygame.image.load(path).convert_alpha()
     sheet_width, sheet_height = sprite_sheet.get_size()
-    
+    debug_warning(f'Loading sprite sheet gred from {path}')
     for y in range(0, sheet_height, sprite_height):
         for x in range(0, sheet_width, sprite_width):
             sprite_rect = pygame.Rect(x, y, sprite_width, sprite_height)
             sprite = BaseSprite(sprite_sheet.subsurface(sprite_rect))
             sprites.append(sprite)
-            
+    debug_success(f"Loaded {len(sprites)} sprites from '{path}'")
     return sprites
 
 
@@ -896,11 +897,13 @@ def fill(data: UnionSpriteOrAnimation, color: tuple[int, int, int] | colors.Colo
         sprite_copy.blit(white_pixels, (0, 0), special_flags=pygame.BLEND_MAX)
         sprite_copy.blit(white_pixels, (0, 0), special_flags=pygame.BLEND_MIN)
         sc = data.copy()
+        debug_info(f"Filled sprite with color {color}")
         return sc.set_real_sprite(sprite_copy)
     elif isinstance(data, (BaseSpriteAnimation, SpriteAnimationObject)):
         new_animation = data.copy().clear_frames()
         for frame in data.get_frames():
             new_animation.add_frame(paint(frame, color))
+        debug_info(f"Filled animation with color {color}")
         return new_animation
 
 
@@ -923,11 +926,13 @@ def paint(data: UnionSpriteOrAnimation, color: tuple[int, int, int] | colors.Col
         white_pixels.fill((color[0], color[1], color[2], 255))
         sprite_copy.blit(white_pixels, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
         sc = data.copy()
+        debug_success(f"Sprite: Painted with color {color}")
         return sc.set_real_sprite(sprite_copy)
     elif isinstance(data, (BaseSpriteAnimation, SpriteAnimationObject)):
         new_animation = data.copy().clear_frames()
         for frame in data.get_frames():
             new_animation.add_frame(paint(frame, color))
+        debug_success(f"Animation: Painted with color {color}")
         return new_animation
     
 
@@ -956,7 +961,7 @@ def create_outline(data: UnionSpriteOrAnimation, color: tuple[int, int, int] = (
                 new_sprite.blit(sprite_copy, (dx + thickness, dy + thickness))
         
         new_sprite.blit(sprite, (thickness, thickness))
-
+        debug_success(f"Created outline for sprite with color {color} and thickness {thickness}")
         return data.copy().set_real_sprite(new_sprite)
     
     if isinstance(data, (BaseSpriteAnimation, SpriteAnimationObject)):
@@ -964,6 +969,7 @@ def create_outline(data: UnionSpriteOrAnimation, color: tuple[int, int, int] = (
         copied_animation.clear_frames()
         for frame in data.get_frames():
             copied_animation.add_frame(create_outline(frame, color, thickness))
+        debug_success(f"Created outline for animation with color {color} and thickness {thickness}")
         return copied_animation
         
 
@@ -1094,12 +1100,126 @@ class TileSet:
     """
     Класс для создания набора тайлов.
     """
-    def __init__(self, tiles: dict[TileConfig, Tile]):
+    def __init__(self, tiles: dict[TileConfig, Tile], name: str):
         """
         Инициализирует объект TileSet.
         Args:
             tiles: Список тайлов, которые будут использоваться в наборе.
         """
         self.__tiles = tiles
+        self.__name = name
+
+    def get_name(self) -> str:
+        return self.__name
+    
+    def get_tiles(self) -> dict[TileConfig, Tile]:
+        return self.__tiles
 
         
+
+def load_standart_tileset(path: str, tile_size: int = 32, type: str | Literal['base'] = "base") -> TileSet:
+    """
+    Загружает стандартный набор тайлов (48 тайлов).
+    Args:
+        path: Путь к файлу с изображению.
+        tile_size: Размер тайла.
+        type: Тип тайлсета (пока только 'base' поддерживается)
+    Returns:
+        Набор тайлов.
+    """
+    # Загружаем все тайлы из спрайтшита
+    loaded_base_tiles = load_sprite_sheet_grid(path, tile_size, tile_size)
+    
+    if len(loaded_base_tiles) != 48:
+        debug_warning(f"TileSetLoader: Expected 48 tiles, got {len(loaded_base_tiles)}. Results may be unexpected.")
+    
+    # Создаем TileType для земли
+    ground_type = TileType(type)
+    
+    # Создаем конфигурации для всех возможных комбинаций
+    # Порядок тайлов в стандартном тайлсете обычно следующий:
+    
+    # 1. Полностью окруженный (внутренний)
+    inner_config = TileConfig(
+        up_left=True, up=True, up_right=True,
+        left=True, center=True, right=True,
+        down_left=True, down=True, down_right=True,
+        type=ground_type
+    )
+    
+    # 2-17. Края и углы (16 тайлов)
+    # Создаем все комбинации для краев
+    edge_configs = []
+    for up in [False, True]:
+        for right in [False, True]:
+            for down in [False, True]:
+                for left in [False, True]:
+                    config = TileConfig(
+                        up=up, right=right, down=down, left=left,
+                        up_left=up and left, up_right=up and right,
+                        down_left=down and left, down_right=down and right,
+                        center=True,
+                        type=ground_type
+                    )
+                    edge_configs.append(config)
+    
+    # 18-33. Внутренние углы (16 тайлов)
+    inner_corner_configs = []
+    for up in [False, True]:
+        for right in [False, True]:
+            for down in [False, True]:
+                for left in [False, True]:
+                    config = TileConfig(
+                        up=up, right=right, down=down, left=left,
+                        up_left=not (up and left), 
+                        up_right=not (up and right),
+                        down_left=not (down and left), 
+                        down_right=not (down and right),
+                        center=True,
+                        type=ground_type
+                    )
+                    inner_corner_configs.append(config)
+    
+    # 34-41. Одиночные выступы (8 тайлов)
+    single_configs = []
+    directions = ['up', 'right', 'down', 'left', 'up_right', 'down_right', 'down_left', 'up_left']
+    for direction in directions:
+        config_dict = {
+            'up': False, 'right': False, 'down': False, 'left': False,
+            'up_left': False, 'up_right': False, 'down_left': False, 'down_right': False,
+            'center': True,
+            'type': ground_type
+        }
+        config_dict[direction] = True
+        config = TileConfig(**config_dict)
+        single_configs.append(config)
+    
+    # 42-47. Дополнительные тайлы (6 тайлов) - обычно для особых случаев
+    special_configs = [
+        # Полностью пустой (но с центром)
+        TileConfig(center=True, type=ground_type),
+        # Только углы
+        TileConfig(up_left=True, up_right=True, down_left=True, down_right=True, center=True, type=ground_type),
+        # Горизонтальная линия
+        TileConfig(left=True, right=True, center=True, type=ground_type),
+        # Вертикальная линия
+        TileConfig(up=True, down=True, center=True, type=ground_type),
+        # Диагональ \
+        TileConfig(up_left=True, down_right=True, center=True, type=ground_type),
+        # Диагональ /
+        TileConfig(up_right=True, down_left=True, center=True, type=ground_type)
+    ]
+    
+    # Собираем все конфиги в один список в правильном порядке
+    all_configs = [inner_config] + edge_configs + inner_corner_configs + single_configs + special_configs
+    
+    # Создаем словарь тайлов
+    tiles_dict = {}
+    for i, config in enumerate(all_configs):
+        if i < len(loaded_base_tiles):
+            tiles_dict[config] = Tile(loaded_base_tiles[i], config)
+        else:
+            debug_warning(f"TileSetLoader: Not enough tiles for config {i}. Skipping.")
+            break
+    
+    return TileSet(tiles_dict, "standard_ground_tileset")

@@ -19,6 +19,14 @@ class Vector2D:
         self.x = x
         self.y = y
 
+    def copy(self) -> 'Vector2D':
+        """
+        Возвращает копию вектора.
+        Returns:
+            Vector2D: Копия вектора.
+        """
+        return Vector2D(self.x, self.y)
+
     @classmethod
     def between(cls, start: tuple[int, int], end: tuple[int, int]) -> 'Vector2D':
         """
@@ -387,7 +395,7 @@ def collision_circle_circle(circle1: tuple[float, float, float], circle2: tuple[
     """
     return (circle1[0] - circle2[0]) ** 2 + (circle1[1] - circle2[1]) ** 2 <= (circle1[2] + circle2[2]) ** 2
 
-def get_perlin_noise(nx: int, ny: int, octaves: int, persistence: float = 1, scale: float = 1) -> list[list[float]]:
+def get_perlin_noise(nx: int, ny: int, octaves: int, persistence: float = 1, scale: float = 1) -> float:
     """
     Генерирует шум Перлина для заданных параметров.
     Args:

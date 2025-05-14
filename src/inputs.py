@@ -74,6 +74,9 @@ import pygame
 import time
 from uuid import uuid4
 
+from typing import Final, final
+
+@final
 class Mouse:
     def __init__(self):
         """Инициализация объекта мыши."""
@@ -143,7 +146,7 @@ class Mouse:
 
 
 # Объект мыши для работы с мышью
-MouseObject = Mouse()
+MouseObject: Final[Mouse] = Mouse()
 
 class Keyboard:
     def __init__(self):
@@ -203,7 +206,7 @@ class Keyboard:
         return False
 
 # Объект клавиатуры для работы с клавиатурой
-KeyboardObject = Keyboard()
+KeyboardObject: Final[Keyboard] = Keyboard()
 
 
 class InputsHandler:

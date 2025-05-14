@@ -4,8 +4,10 @@ sys.path.append('./')
 
 from src.app import AppWindow
 from src.render import sprites, colors
-from src.core.settings  import CONST_WINDOW_FULLSCREEN
-
+from src.core.settings import CONST_WINDOW_FULLSCREEN
+from src.inputs import MouseObject
+from src.utils import wait
+from src.debuger import debug_error, debug_info, debug_warning
 
 window = AppWindow([1920, 1080], flags=CONST_WINDOW_FULLSCREEN, vsync=False)
 window.set_view_information_in_window()
@@ -23,7 +25,7 @@ animation_2.set_pos([800, 400])
 
 
 sprite = sprites.load_base_sprite('examples\ex_4_sprites\data\img_2.png', 5).set_scale(2)
-sprite_2 = sprite.copy().set_static(True).set_alpha_float(0.5)
+sprite_2 = sprite.copy().set_static(False).set_alpha_float(0.5)
 
 
 while window.is_opened:
@@ -42,5 +44,17 @@ while window.is_opened:
 
     sprite.base_render(window.surf, (1000, 600))
     sprite.rotate(1)
+
+    if MouseObject.get_click():
+        debug_error("[Error message] Clicked")
+
+    if MouseObject.get_pressed():
+        debug_info("[Info] Pressed")
+
+
+    if wait(1, "wait"):
+        debug_warning("[Warning] Waiting 1 second...")
+
+    
 
     window.update()

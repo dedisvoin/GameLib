@@ -29,8 +29,30 @@ class Color:
         self.b = b
         self.a = a
 
+    def __sum__(self, other):
+        """
+        Сложение двух цветов.
+
+        Аргументы:
+            other (Color): Другой цвет для сложения
+
+        Возвращает:
+            Color: Результат сложения цветов
+        """
+        return Color(self.r + other.r, self.g + other.g, self.b + other.b, self.a + other.a)
+    
+    def __sub__(self, other):
+        """
+        Вычитание двух цветов.
+        Аргументы:
+            other (Color): Другой цвет для вычитания
+        Возвращает:
+            Color: Результат вычитания цветов
+        """
+        return Color(abs(self.r - other.r), abs(self.g - other.g), abs(self.b - other.b), abs(self.a - other.a))
+
     @classmethod
-    def Random(self):
+    def Random(cls):
         """
         Возвращает случайный цвет.
 
@@ -48,6 +70,15 @@ class Color:
             tuple: Кортеж (r, g, b)
         """
         return (self.r, self.g, self.b)
+    
+    @property
+    def rgb_int(self):
+        """
+        Возвращает кортеж из RGB компонентов цвета в виде целых чисел.
+        Возвращает:
+            tuple: Кортеж (r, g, b)
+        """
+        return (int(self.r), int(self.g), int(self.b))
     
     @property
     def rgba(self):
@@ -98,3 +129,43 @@ COLOR_GOLD = Color(255, 215, 0)
 COLOR_SILVER = Color(192, 192, 192)
 COLOR_BRONZE = Color(205, 127, 50)
     
+
+
+class ColorGradient:
+    """
+    Класс для создания градиента цветов.
+
+    """
+    def __init__(self, colors: list[Color], sizes: list[int] = None):
+        """
+        Инициализация объекта ColorGradient.
+
+        Аргументы:
+        colors (list[Color]): Список цветов для градиента
+        percentages (list[float]): Список процентов для каждого цвета в градиенте, по умолчанию None
+        """
+        self.__colors = colors
+        self.__sizes = sizes
+        self.__full_size = sum(sizes)
+
+    def generate_gradient(self) -> list[Color]:
+        """
+        Генерирует градиент цветов на основе предопределенных цветов и их процентов.
+        Возвращает:
+            list[Color]: Список цветов для градиента
+        """
+        
+        color_1 = self.__colors[0]
+        color_2 = self.__colors[1]
+
+        delta_r = (color_2.r - color_1.r)
+        delta_g = (color_2.g - color_1.g)
+        delta_b = (color_2.b - color_1.b)
+        
+
+        
+        
+
+
+        
+

@@ -159,6 +159,7 @@ def draw_polygon_circle(surf: pygame.Surface, pos: tuple[int, int], radius: int,
         segments_count (int): Количество сегментов многоугольника.
     """
     points = []
+    rotate = math.radians(rotate)
     for i in range(segments_count):
         angle = i * 2 * math.pi / segments_count
         x = pos[0] + radius * math.cos(angle + rotate)

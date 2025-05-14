@@ -24,5 +24,6 @@
         "stdexcept": "cpp",
         "system_error": "cpp",
         "typeinfo": "cpp"
-    }
+    },
+    "python.analysis.typeCheckingMode": "off"
 }

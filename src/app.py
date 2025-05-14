@@ -19,15 +19,21 @@ Dependencies:
 
 from src.core.settings import WINDOW_FPS_CHECK_TIMEOUT, WINDOW_SIZE, WINDOW_TITLE, WINDOW_VSYNC, WINDOW_WAITED_FPS, WINDOW_BG_COLOR, WINDOW_DELTA_MATCH_FPS
 from src.core import window
-
+from threading import Thread
+from time import sleep
 from src.render.text import TextField
+from src.debuger import STANDART_DEBUG_STREAM, debug_info
+from typing import Tuple, Callable, Any, final
+from time import time
 
-from typing import Tuple, Callable, Any
 import pygame
 
 pygame.init()
 
 
+
+
+@final
 class AppWindow(window._Window):
     """Класс приложения для создания и управления окном.
     
@@ -72,6 +78,11 @@ class AppWindow(window._Window):
         self.__text_field_frame_grafic_fps = TextField("arial", 12, "black", True)
 
         self.__frame_time_array = []
+        debug_info(f"AppWindow inited: {self.get_size()}")
+
+        self.__middle_fps_arr = []
+        self.__middle_fps_array = []
+
 
     def get_size(self) -> tuple[int, int]:
         """Получить размер окна в пикселях (ширина, высота).
@@ -183,6 +194,17 @@ class AppWindow(window._Window):
             color = self.__bg_color
         self._surf.fill(color)
 
+    def get_middle_fps(self):
+        """Получить среднюю частоту кадров за последние 100 кадров.
+
+        Returns:
+            float: Средняя частота кадров.
+        """
+        try:
+            return sum(self.__middle_fps_arr) / len(self.__middle_fps_arr)
+        except ZeroDivisionError:
+            return 0
+
     def render_information_in_window(self) -> None:
         """
         Отображение информации о частоте кадров в окне.
@@ -190,19 +212,30 @@ class AppWindow(window._Window):
         """
         if self.__view_information_in_window:
             
+            self.__text_field_fps.set_color((1, 1, 1))
             self.__text_field_fps.set_text(f"FPS: {int(self.get_fps())} / {self.__waited_fps}")
             self.__text_field_fps.render(self.surf, (5, 0))
+
+            self.__text_field_fps.set_color((250, 170, 150))
+            try:
+                middle_fps = int(sum(self.__middle_fps_arr) / len(self.__middle_fps_arr))
+            except:
+                middle_fps = "INFINITY"
+            self.__text_field_fps.set_text(f"MIDDLE FPS: {middle_fps}")
+            self.__text_field_fps.render(self.surf, (5, 22))
+
+
             self.__text_field_render_timer.set_text(f"render time: {self.get_render_time()} ms")
-            self.__text_field_render_timer.render(self.surf, (5, 20))
+            self.__text_field_render_timer.render(self.surf, (5, 40))
             self.__text_field_delta.set_text(f"delta: {self.get_delta(smooth=True):.2f}")
-            self.__text_field_delta.render(self.surf, (5, 35))
+            self.__text_field_delta.render(self.surf, (5, 55))
             if self._vsync:
                 self.__text_field_vsync.set_color('green')
                 self.__text_field_vsync.set_text(f"vsync: on")
             else:
                 self.__text_field_vsync.set_color('black')
                 self.__text_field_vsync.set_text(f"vsync: off")
-            self.__text_field_vsync.render(self.surf, (5, 50))
+            self.__text_field_vsync.render(self.surf, (5, 70))
 
             # График frametime
             current_time = pygame.time.get_ticks()
@@ -215,13 +248,21 @@ class AppWindow(window._Window):
                 self.__frame_time_array.append(current_fps)
                 if len(self.__frame_time_array) > 100:
                     self.__frame_time_array.pop(0)
+                
+
+                self.__middle_fps_array.append(self.get_middle_fps())
+                if len(self.__middle_fps_array) > 100:
+                    self.__middle_fps_array.pop(0)
+
                 self._last_sample_time = current_time
+
+            
             
             # Отрисовка графика
             graph_height = 90
             graph_width = 200
             graph_x = 5
-            graph_y = 70
+            graph_y = 90
             
             # Фон графика
             pygame.draw.rect(self.surf, (1, 1, 1), (graph_x, graph_y, graph_width, graph_height), 1)
@@ -238,14 +279,25 @@ class AppWindow(window._Window):
                         pygame.draw.line(self.surf, (0,0,0), (x1,y1), (x2,y2), 1)
                     except: ...
 
+                 # Фиксированный максимум для стабильной шкалы
+                for i in range(len(self.__middle_fps_array)-1):
+                    x1 = graph_x + (i * graph_width / 100)
+                    x2 = graph_x + ((i+1) * graph_width / 100)
+                    try:
+                        y1 = graph_y + graph_height - (self.__middle_fps_array[i] * graph_height / max_fps)
+                        y2 = graph_y + graph_height - (self.__middle_fps_array[i+1] * graph_height / max_fps)
+                        pygame.draw.line(self.surf, (250, 170, 150), (x1,y1), (x2,y2), 3)
+                    except: ...
+
+
                 # Отрисовка отметок FPS
                 fps_marks = [30, 60, 120]  # Отметки FPS для отображения
                 for fps in fps_marks:
                     if fps <= max_fps:
                         y = graph_y + graph_height - (fps * graph_height / max_fps)
-                        pygame.draw.line(self.surf, (200,0,0), (graph_x, y-3), (graph_x + graph_width, y - 3), 1)
+                        pygame.draw.line(self.surf, (200,200,200), (graph_x, y-3), (graph_x + graph_width, y - 3), 1)
                         self.__text_field_frame_grafic_fps.set_text(f"FPS: {fps}")
-                        self.__text_field_frame_grafic_fps.set_color('red')
+                        self.__text_field_frame_grafic_fps.set_color((200, 200, 200))
                         self.__text_field_frame_grafic_fps.render(self.surf, (graph_x + graph_width + 5, y - 8)) 
 
 
@@ -263,10 +315,15 @@ class AppWindow(window._Window):
             delta = WINDOW_DELTA_MATCH_FPS / self.get_fps()
         except ZeroDivisionError:
             delta = 1
-        self.__smoth_deltas.append(delta)
 
+        self.__smoth_deltas.append(delta)
         if len(self.__smoth_deltas) > 50:
             self.__smoth_deltas.pop(0)
+
+        self.__middle_fps_arr.append(self.get_fps())
+        if len(self.__middle_fps_arr) > 100:
+            self.__middle_fps_arr.pop(0)
+
         
 
         if self.__view_information_in_title:
@@ -274,10 +331,11 @@ class AppWindow(window._Window):
         if self.__view_information_in_window:
             self.render_information_in_window()
 
+        STANDART_DEBUG_STREAM.render(self)
+
         
         self._update()
         
-            
         self._update_state()
         
         self.__clock.tick(self.__waited_fps)    
@@ -297,6 +355,7 @@ class AppWindow(window._Window):
         """
         return self._surf
         
+@final
 class AppProcess:
     """Класс для управления отдельным процессом приложения.
     Используется вместе с AppProcessesPool. 
@@ -392,10 +451,7 @@ class AppProcess:
         """Получить идентификатор процесса."""
         return self.__identifier
 
-
-
-from threading import Thread
-from time import sleep
+@final
 class AppSubProcess:
     """Класс для управления подпроцессом приложения.
 
@@ -407,7 +463,7 @@ class AppSubProcess:
         __started: Флаг активности подпроцесса
         __thread: Поток выполнения подпроцесса
     """
-    def __init__(self, callable: Callable | None = None, dellay: float = 0, identifier: str | int | None = None) -> None:
+    def __init__(self, callable: Callable | None = None, dellay: float = 0, identifier: str | int | None = None, *args, **kvargs) -> None:
         """Инициализация подпроцесса.
         Если вы хотите чтобы процесс выполнялся с частатой как у приложения используйте формулу 1 / fps
         >>> dellay = 1 / 60 # будет выполняться с частотой 60 раз в секунду.
@@ -424,16 +480,21 @@ class AppSubProcess:
         self.__started = False
         self.__thread: Thread | None = None
 
-    def __process(self):
+        self.__args = args
+        self.__kvargs = kvargs
+
+        
+
+    def __process(self, *args, **kvargs):
         """Внутренний метод для выполнения подпроцесса в отдельном потоке."""
         while self.__started:
-            self.__callable()
+            self.__callable(*args, **kvargs)
             sleep(self.__dellay)
         
     def start(self):
         """Запустить подпроцесс в отдельном потоке."""
         self.__started = True
-        self.__thread = Thread(target=self.__process, daemon=True)
+        self.__thread = Thread(target=self.__process, daemon=True, args=self.__args, kwargs=self.__kvargs)
         self.__thread.start()
         return self
     
@@ -475,6 +536,7 @@ class AppSubProcess:
         """
         return self.__thread
 
+@final
 class AppProcessesPool:
     """Класс для управления пулом процессов приложения.
     

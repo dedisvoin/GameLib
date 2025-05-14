@@ -25,7 +25,7 @@ class TextField:
         __text (str): Текст для отображения
     """
 
-    def __init__(self, font: str, font_size: int, color: tuple[int, int, int] | Color, bold: bool = False, italic: bool = False, ):
+    def __init__(self, font: str, font_size: int, color: tuple[int, int, int] | Color | str, bold: bool = False, italic: bool = False, ):
         """Инициализация текстового поля.
 
         Аргументы:
@@ -42,6 +42,19 @@ class TextField:
         self.__italic = italic
         self.__font_object = pygame.font.SysFont(self.__font, self.__font_size, self.__bold, self.__italic)
         self.__text: str = ''
+        self.__alpha = 255
+
+    def set_alpha(self, alpha: int):
+        """Установка прозрачности текста.
+
+        Аргументы:
+            alpha (int): Значение прозрачности (0-255)
+        """
+        self.__alpha = alpha
+
+    def get_alpha(self) -> int:
+        """Получение значения прозрачности текста."""
+        return self.__alpha
 
     def render(self, surf: pygame.Surface, pos: tuple[int, int] = (0, 0), antialias: bool = True,
                left_or_right: bool = True, up_or_down: bool = True):
@@ -55,6 +68,7 @@ class TextField:
             up_or_down (bool, optional): Выравнивание по вертикали. True - сверху, False - снизу
         """
         text_surf = self.__font_object.render(self.__text, antialias, self.__color)
+        text_surf.set_alpha(self.__alpha)
         if left_or_right:
             pos = (pos[0], pos[1])
         else:
